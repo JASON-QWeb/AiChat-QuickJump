@@ -242,9 +242,12 @@ export class RightSideTimelineNavigator {
       if (isPinned) {
         // 标记状态
         node.style.backgroundColor = this.currentTheme.pinnedColor; // 使用主题重点色
+        // 标记的节点比普通节点稍大
+        node.style.transform = 'translate(-50%, -50%) scale(1.2)';
       } else {
         // 普通状态 (未选中)
         node.style.backgroundColor = this.currentTheme.defaultNodeColor; // 使用主题默认色
+        node.style.transform = 'translate(-50%, -50%) scale(1)';
       }
     }
   }

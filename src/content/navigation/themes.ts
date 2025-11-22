@@ -16,13 +16,13 @@ export interface TimelineTheme {
 export const themes: Record<string, TimelineTheme> = {
   light: {
     name: '亮色',
-    activeColor: '#4CAF50', // 绿色
-    activeShadow: 'rgba(76, 175, 80, 0.5)',
-    defaultNodeColor: '#888888', // 灰色
+    activeColor: '#29B6F6', // 浅蓝
+    activeShadow: 'rgba(41, 182, 246, 0.5)',
+    defaultNodeColor: '#dbdbdb', // 浅灰色
     timelineBarColor: 'rgba(150, 150, 150, 0.3)',
-    pinnedColor: '#FF9800', // 橙色
+    pinnedColor: '#0277BD', // 深蓝
     tooltipBackgroundColor: 'rgba(255, 255, 255, 0.95)',
-    tooltipTextColor: '#000000'
+    tooltipTextColor: '#000000' // 黑色
   },
   dark: {
     name: '暗色',
@@ -53,6 +53,26 @@ export const themes: Record<string, TimelineTheme> = {
     pinnedColor: '#673AB7', // 深紫 (重点)
     tooltipBackgroundColor: 'rgba(237, 231, 246, 0.95)', // 极浅紫
     tooltipTextColor: '#4527A0' // 深紫
+  },
+  pink: {
+    name: '粉红色',
+    activeColor: '#FF4081', // 亮粉
+    activeShadow: 'rgba(255, 64, 129, 0.5)',
+    defaultNodeColor: '#F8BBD0', // 浅粉
+    timelineBarColor: 'rgba(255, 64, 129, 0.3)',
+    pinnedColor: '#C2185B', // 深粉红 (重点)
+    tooltipBackgroundColor: 'rgba(252, 228, 236, 0.95)', // 极浅粉
+    tooltipTextColor: '#880E4F' // 深粉
+  },
+  orange: {
+    name: '橘黄色',
+    activeColor: '#FF9800', // 橘黄
+    activeShadow: 'rgba(255, 152, 0, 0.5)',
+    defaultNodeColor: '#FFE0B2', // 浅橘
+    timelineBarColor: 'rgba(255, 152, 0, 0.3)',
+    pinnedColor: '#E65100', // 深橘红 (重点)
+    tooltipBackgroundColor: 'rgba(255, 243, 224, 0.95)', // 极浅橘
+    tooltipTextColor: '#E65100' // 深橘
   }
 };
 

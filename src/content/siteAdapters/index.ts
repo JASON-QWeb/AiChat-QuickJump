@@ -64,6 +64,7 @@ export interface SiteAdapter {
 import { chatgptAdapter } from './chatgptAdapter';
 import { claudeAdapter } from './claudeAdapter';
 import { geminiAdapter } from './geminiAdapter';
+import { deepseekAdapter } from './deepseekAdapter';
 
 /**
  * 所有已注册的适配器列表
@@ -72,7 +73,8 @@ import { geminiAdapter } from './geminiAdapter';
 const adapters: SiteAdapter[] = [
   chatgptAdapter,
   claudeAdapter,
-  geminiAdapter
+  geminiAdapter,
+  deepseekAdapter
 ];
 
 /**
