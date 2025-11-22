@@ -8,32 +8,38 @@ import { themes, resolveTheme, DEFAULT_THEME_MODE, type ThemeType, type ThemeMod
 const HIGHLIGHT_CLASS = 'llm-answer-nav-highlight';
 let currentHighlightedNode: HTMLElement | null = null;
 let stylesInjected = false;
+let cachedThemeMode: ThemeMode | null = null;
+let cachedThemeType: ThemeType | null = null;
 
 /**
  * 注入高亮样式
  */
-async function injectStyles(): Promise<void> {
-  // 加载当前主题模式
-  let themeMode: ThemeMode = DEFAULT_THEME_MODE;
+async function injectStyles(forceUpdate: boolean = false): Promise<void> {
   try {
-    const result = await chrome.storage.sync.get('ui_theme');
-    themeMode = (result.ui_theme as ThemeMode) || DEFAULT_THEME_MODE;
+    if (cachedThemeMode === null) {
+      const result = await chrome.storage.sync.get('ui_theme');
+      cachedThemeMode = (result.ui_theme as ThemeMode) || DEFAULT_THEME_MODE;
+    }
   } catch (error) {
     console.error('加载主题失败:', error);
+    cachedThemeMode = DEFAULT_THEME_MODE;
   }
-  
-  // 解析为实际主题
-  const actualTheme = resolveTheme(themeMode);
+
+  const actualTheme = resolveTheme(cachedThemeMode || DEFAULT_THEME_MODE);
+  if (!forceUpdate && stylesInjected && cachedThemeType === actualTheme) {
+    return;
+  }
+
+  cachedThemeType = actualTheme;
   const theme = themes[actualTheme];
-  
-  // 移除旧样式
-  const oldStyle = document.getElementById('llm-answer-nav-styles');
-  if (oldStyle) {
-    oldStyle.remove();
+
+  let style = document.getElementById('llm-answer-nav-styles') as HTMLStyleElement | null;
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'llm-answer-nav-styles';
+    document.head.appendChild(style);
   }
-  
-  const style = document.createElement('style');
-  style.id = 'llm-answer-nav-styles';
+
   style.textContent = `
     .${HIGHLIGHT_CLASS} {
       position: relative;
@@ -73,8 +79,7 @@ async function injectStyles(): Promise<void> {
       }
     }
   `;
-  
-  document.head.appendChild(style);
+
   stylesInjected = true;
 }
 
@@ -180,6 +185,15 @@ export function clearAllHighlights(): void {
     }
   });
   currentHighlightedNode = null;
+}
+
+if (chrome?.storage?.onChanged) {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'sync' && changes.ui_theme) {
+      cachedThemeMode = (changes.ui_theme.newValue as ThemeMode) || DEFAULT_THEME_MODE;
+      injectStyles(true);
+    }
+  });
 }
 
 /**

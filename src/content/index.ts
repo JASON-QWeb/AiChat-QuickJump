@@ -11,6 +11,7 @@ let timelineNavigator: RightSideTimelineNavigator | null = null;
 let isInitializing = false; // 防止重复初始化
 let isListLocked = false; // 标记列表是否已锁定（固定总数）
 let isManualScrolling = false; // 标记是否正在进行点击导航滚动
+let contentMutationObserver: MutationObserver | null = null; // 监听页面变化的观察器引用
 
 /**
  * 防抖函数
@@ -151,6 +152,13 @@ function clearUI(): void {
     console.log('🧹 清理旧的时间线导航器');
     timelineNavigator.destroy();
     timelineNavigator = null;
+  }
+
+  // 断开 MutationObserver，防止重复监听
+  if (contentMutationObserver) {
+    contentMutationObserver.disconnect();
+    contentMutationObserver = null;
+    console.log('🔌 MutationObserver 已断开');
   }
   // 重置 indexManager，避免持有旧的 DOM 引用
   indexManager = null;
@@ -307,7 +315,12 @@ async function init() {
   
   // 智能刷新：支持新对话动态添加
   // 一旦扫描到问题，就锁定列表，但会检测数量增加的情况
-  const observer = new MutationObserver(debounce(() => {
+  if (contentMutationObserver) {
+    contentMutationObserver.disconnect();
+    contentMutationObserver = null;
+  }
+
+  contentMutationObserver = new MutationObserver(debounce(() => {
     if (!indexManager) return;
 
     // 如果列表已锁定，检查是否是新消息（数量增加）
@@ -360,7 +373,7 @@ async function init() {
     }
   }, 1000));
   
-  observer.observe(document.body, {
+  contentMutationObserver.observe(document.body, {
     childList: true,
     subtree: true
   });
