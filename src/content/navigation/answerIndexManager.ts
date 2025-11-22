@@ -135,26 +135,35 @@ export class AnswerIndexManager {
       return;
     }
 
-    // 添加一个偏移量，让判断更准确（考虑到页面顶栏等）
-    const threshold = 100;
-    const currentScroll = scrollY + threshold;
+    // 检查是否接近页面底部
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
+    const scrollBottom = scrollY + windowHeight;
+    const isNearBottom = documentHeight - scrollBottom < 200; // 距离底部小于 200px
 
-    // 找到最接近当前滚动位置的回答
+    // 如果在底部，直接设置为最后一个
+    if (isNearBottom) {
+      this.currentIndex = this.answers.length - 1;
+      return;
+    }
+
+    // 否则，找到最接近当前滚动位置的回答
+    const viewportCenter = scrollY + windowHeight / 2;
     let closestIndex = 0;
-    let minDistance = Math.abs(this.answers[0].topOffset - currentScroll);
+    let minDistance = Math.abs(this.answers[0].topOffset - viewportCenter);
 
     for (let i = 1; i < this.answers.length; i++) {
-      const distance = Math.abs(this.answers[i].topOffset - currentScroll);
+      const distance = Math.abs(this.answers[i].topOffset - viewportCenter);
       if (distance < minDistance) {
         minDistance = distance;
         closestIndex = i;
+      } else if (this.answers[i].topOffset > viewportCenter) {
+        // 如果当前回答已经在视口中心之后，停止搜索
+        break;
       }
     }
 
-    // 只有当索引变化时才更新
-    if (closestIndex !== this.currentIndex) {
-      this.currentIndex = closestIndex;
-    }
+    this.currentIndex = closestIndex;
   }
 
   /**
