@@ -72,7 +72,8 @@ export function getSystemTheme(): ThemeType {
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     return 'dark';
   }
-  return 'green';
+  // 浅色模式使用亮色主题（白黑搭配）
+  return 'light';
 }
 
 /**

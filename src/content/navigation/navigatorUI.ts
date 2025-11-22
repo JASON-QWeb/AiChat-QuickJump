@@ -298,7 +298,7 @@ export class NavigatorUI {
     this.systemThemeListener = (e: MediaQueryListEvent) => {
       // 只在"auto"模式下才响应系统主题变化
       if (this.currentThemeMode === 'auto') {
-        const newTheme = e.matches ? 'dark' : 'green';
+        const newTheme = e.matches ? 'dark' : 'light';
         console.log(`🌓 系统主题已变化，切换到: ${themes[newTheme].name}`);
         this.applyTheme(newTheme);
       }
