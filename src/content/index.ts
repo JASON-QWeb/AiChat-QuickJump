@@ -55,10 +55,23 @@ function navigateToAnswer(index: number): void {
  */
 function navigateToPrev(): void {
   console.log('⬆️ 触发：上一条回答');
-  if (indexManager && indexManager.moveToPrev()) {
-    navigateToAnswer(indexManager.getCurrentIndex());
+  if (!indexManager || indexManager.getTotalCount() === 0) {
+    console.log('⚠️ 没有可导航的回答');
+    return;
+  }
+  
+  // 如果已经在第一条，滚动到第一条的顶部
+  if (indexManager.getCurrentIndex() === 0) {
+    console.log('📍 已经是第一条，滚动到顶部');
+    const node = indexManager.getCurrentNode();
+    if (node) {
+      scrollToAndHighlight(node);
+    }
   } else {
-    console.log('ℹ️ 已经是第一条回答');
+    // 否则跳转到上一条
+    if (indexManager.moveToPrev()) {
+      navigateToAnswer(indexManager.getCurrentIndex());
+    }
   }
 }
 
@@ -67,7 +80,12 @@ function navigateToPrev(): void {
  */
 function navigateToNext(): void {
   console.log('⬇️ 触发：下一条回答');
-  if (indexManager && indexManager.moveToNext()) {
+  if (!indexManager || indexManager.getTotalCount() === 0) {
+    console.log('⚠️ 没有可导航的回答');
+    return;
+  }
+  
+  if (indexManager.moveToNext()) {
     navigateToAnswer(indexManager.getCurrentIndex());
   } else {
     console.log('ℹ️ 已经是最后一条回答');
@@ -135,23 +153,34 @@ async function init() {
       // 如果读取配置失败，默认继续执行
     }
   
+  // 初始化导航 UI（先显示加载状态）
+  if (!navigatorUI) {
+    navigatorUI = new NavigatorUI();
+    navigatorUI.onPrev(navigateToPrev);
+    navigatorUI.onNext(navigateToNext);
+  }
+  navigatorUI.setLoading(true);
+  
   // 初始化索引管理器
   indexManager = new AnswerIndexManager(adapter, document);
   
-  console.log(`LLM Answer Navigator: 初始化完成，共 ${indexManager.getTotalCount()} 个回答`);
+  const totalCount = indexManager.getTotalCount();
+  console.log(`LLM Answer Navigator: 初始化完成，共 ${totalCount} 个回答`);
   
   // 根据当前滚动位置设置初始索引
   // ChatGPT 切换对话后通常会滚动到底部，所以我们需要正确设置当前索引
-  if (indexManager.getTotalCount() > 0) {
+  if (totalCount > 0) {
     indexManager.updateCurrentIndexByScroll(window.scrollY);
-    console.log(`📍 初始位置: 第 ${indexManager.getCurrentIndex() + 1}/${indexManager.getTotalCount()} 个回答`);
+    console.log(`📍 初始位置: 第 ${indexManager.getCurrentIndex() + 1}/${totalCount} 个回答`);
   }
   
-  // 初始化导航 UI
-  navigatorUI = new NavigatorUI();
-  navigatorUI.onPrev(navigateToPrev);
-  navigatorUI.onNext(navigateToNext);
+  // 取消加载状态，更新 UI
+  navigatorUI.setLoading(false);
   updateUI();
+  
+  if (totalCount === 0) {
+    console.warn('⚠️ 未找到任何回答，请检查页面是否已加载完成');
+  }
   
   // 监听滚动事件
   window.addEventListener('scroll', handleScroll, { passive: true });
@@ -185,10 +214,9 @@ const urlObserver = new MutationObserver(() => {
     console.log('🔄 检测到 URL 变化，重新初始化');
     lastUrl = currentUrl;
     
-    // 清理旧的 UI
+    // 设置加载状态（保留 UI，不销毁）
     if (navigatorUI) {
-      navigatorUI.destroy();
-      navigatorUI = null;
+      navigatorUI.setLoading(true);
     }
     
     // 延迟重新初始化，等待页面内容加载

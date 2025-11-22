@@ -64,6 +64,7 @@ export class NavigatorUI {
     const button = document.createElement('button');
     button.textContent = text;
     button.title = title;
+    button.dataset.originalTitle = title; // 保存原始标题
     button.style.cssText = `
       padding: 8px 16px;
       background: #4CAF50;
@@ -157,21 +158,33 @@ export class NavigatorUI {
    */
   private updateDisplay(): void {
     if (this.totalCount === 0) {
-      this.indexDisplay.textContent = '0 / 0';
+      this.indexDisplay.textContent = '加载中...';
       this.prevButton.disabled = true;
       this.nextButton.disabled = true;
       this.prevButton.style.opacity = '0.5';
       this.nextButton.style.opacity = '0.5';
+      this.prevButton.style.cursor = 'not-allowed';
+      this.nextButton.style.cursor = 'not-allowed';
     } else {
       this.indexDisplay.textContent = `${this.currentIndex + 1} / ${this.totalCount}`;
       
-      // 更新按钮状态
-      this.prevButton.disabled = this.currentIndex === 0;
-      this.nextButton.disabled = this.currentIndex === this.totalCount - 1;
+      // 向上按钮：始终可用
+      this.prevButton.disabled = false;
+      this.prevButton.style.opacity = '1';
+      this.prevButton.style.cursor = 'pointer';
       
-      this.prevButton.style.opacity = this.prevButton.disabled ? '0.5' : '1';
+      // 更新向上按钮的提示文字
+      if (this.currentIndex === 0) {
+        this.prevButton.title = this.totalCount === 1 
+          ? '滚动到顶部' 
+          : '已经是第一条（点击滚动到顶部）';
+      } else {
+        this.prevButton.title = this.prevButton.dataset.originalTitle || '上一条回答';
+      }
+      
+      // 向下按钮：只有在有多条对话且不是最后一条时可用
+      this.nextButton.disabled = this.currentIndex === this.totalCount - 1;
       this.nextButton.style.opacity = this.nextButton.disabled ? '0.5' : '1';
-      this.prevButton.style.cursor = this.prevButton.disabled ? 'not-allowed' : 'pointer';
       this.nextButton.style.cursor = this.nextButton.disabled ? 'not-allowed' : 'pointer';
     }
   }
@@ -213,6 +226,23 @@ export class NavigatorUI {
   hide(): void {
     this.container.style.opacity = '0';
     this.container.style.pointerEvents = 'none';
+  }
+
+  /**
+   * 设置加载状态
+   */
+  setLoading(loading: boolean): void {
+    if (loading) {
+      this.indexDisplay.textContent = '加载中...';
+      this.prevButton.disabled = true;
+      this.nextButton.disabled = true;
+      this.prevButton.style.opacity = '0.5';
+      this.nextButton.style.opacity = '0.5';
+      this.prevButton.style.cursor = 'not-allowed';
+      this.nextButton.style.cursor = 'not-allowed';
+    } else {
+      this.updateDisplay();
+    }
   }
 
   /**
