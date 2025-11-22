@@ -2,7 +2,7 @@
 
 ## 修复概览
 
-本次在debug分支上完成了一系列关键的性能优化、Bug修复和代码清理工作，共提交了12个commit。
+本次在debug分支上完成了一系列关键的性能优化、Bug修复和代码清理工作，共提交了15个commit。
 
 ## 已完成的修复
 
@@ -32,7 +32,7 @@
 - **修复**: 添加500ms有效期的位置缓存Map
 - **影响**: 减少约50-70%的DOM查询开销
 
-### P1 - 代码清理 (7项)
+### P1 - 代码清理 (9项)
 
 #### 5-11. Console.log清理 ✅
 - **Commits**: 
@@ -48,11 +48,23 @@
 - **保留**: 关键的console.error和console.warn用于错误追踪
 - **影响**: 生产环境控制台更清爽，减少日志输出开销
 
+#### 12. 移除废弃的findAllAnswers方法 ✅
+- **Commit**: `efe8b65` - refactor: 移除废弃的findAllAnswers方法，统一使用getPromptAnswerPairs
+- **清理**: 从SiteAdapter接口和chatgptAdapter实现中移除（约103行代码）
+- **影响**: 简化接口，统一使用更强大的getPromptAnswerPairs方法
+
+#### 13. 删除废弃的NavigatorUI.ts ✅
+- **Commit**: `721cd0a` - refactor: 删除废弃的NavigatorUI.ts，已被RightSideTimelineNavigator完全替代
+- **清理**: 删除整个文件（372行代码）
+- **影响**: 
+  - 减少代码维护负担
+  - 打包体积减少约2.6kb（从41.0kb降至38.4kb，减少6.3%）
+
 ### 文档
 
-#### 12. TODO清单 ✅
+#### 14-15. 文档更新 ✅
 - **Commit**: `e45c0fb` - docs: 添加代码清理和优化TODO清单
-- **内容**: 详细的问题分析和修复计划
+- **Commit**: `782526b` - docs: 添加debug分支修复汇总文档
 
 ## 核心功能验证
 
@@ -105,8 +117,6 @@ npm run build
 根据TODO.md，以下项目留待后续优化：
 - [ ] 优化MutationObserver监听范围
 - [ ] 实现虚拟滚动（对话数>100时）
-- [ ] 移除废弃的findAllAnswers方法
-- [ ] 移除或重构NavigatorUI.ts
 - [ ] 提取魔法数字为常量
 
 ## 下一步建议
