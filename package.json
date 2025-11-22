@@ -1,7 +1,7 @@
 {
-  "name": "llm-answer-navigator",
+  "name": "ai-chat-prompt-navigator",
   "version": "1.2.2",
-  "description": "Chrome 扩展：在 LLM 对话页面中提供回答导航功能",
+  "description": "AI Chat Prompt Navigator - Make AI Conversation Navigation Simple and Efficient",
   "scripts": {
     "build": "node build.js",
     "dev": "node build.js --watch",
