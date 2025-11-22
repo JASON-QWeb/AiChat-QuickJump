@@ -23,6 +23,7 @@ async function getSettings() {
     'enable_chatgpt', 
     'enable_claude', 
     'enable_gemini',
+    'enable_deepseek',
     'ui_theme'
   ]);
   return cachedSettings;
@@ -330,6 +331,8 @@ async function init() {
         isEnabled = settings.enable_claude !== false;
     } else if (adapter.name === 'Gemini') {
         isEnabled = settings.enable_gemini !== false;
+    } else if (adapter.name === 'DeepSeek') {
+        isEnabled = settings.enable_deepseek !== false;
     }
 
     if (!isEnabled) {
