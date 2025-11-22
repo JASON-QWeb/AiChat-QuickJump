@@ -217,13 +217,11 @@ function initTimelineNavigator(): void {
 async function init() {
   // 如果正在初始化，返回现有的Promise，避免并发
   if (isInitializing && initPromise) {
-    console.log('⏳ 正在初始化中，等待当前初始化完成');
     return initPromise;
   }
   
   // 如果已经初始化但没有Promise，说明是重复调用
   if (isInitializing) {
-    console.log('⏳ 正在初始化中，跳过重复调用');
     return;
   }
   
@@ -243,12 +241,9 @@ async function init() {
     const adapter = getActiveAdapter(window.location, customUrls);
     
     if (!adapter) {
-      console.log('LLM Answer Navigator: 当前页面不支持，跳过初始化');
       isInitializing = false;
       return;
     }
-    
-    console.log(`LLM Answer Navigator: ${adapter.name} 页面已检测到，准备初始化`);
     
     // 检查是否在配置中启用了该站点
     let isEnabled = true;
@@ -261,7 +256,6 @@ async function init() {
     }
 
     if (!isEnabled) {
-      console.log(`LLM Answer Navigator: ${adapter.name} 导航功能已在设置中关闭`);
       isInitializing = false;
       return;
     }
@@ -272,20 +266,16 @@ async function init() {
   indexManager = new AnswerIndexManager(adapter, document);
   
   const totalCount = indexManager.getTotalCount();
-  console.log(`LLM Answer Navigator: 初始化完成，共 ${totalCount} 个问题`);
   
   // 如果扫描到问题，立即锁定列表（不再自动刷新）
   if (totalCount > 0) {
     isListLocked = true;
-    console.log('🔒 问题列表已锁定，总数固定为:', totalCount);
     
     // 根据当前滚动位置设置初始索引
     indexManager.updateCurrentIndexByScroll(window.scrollY);
-    console.log(`📍 初始位置: 第 ${indexManager.getCurrentIndex() + 1}/${totalCount} 个问题`);
   } else {
     // 如果没有找到问题，不锁定，允许后续自动刷新
     isListLocked = false;
-    console.warn('⚠️ 未找到任何问题，将在5秒内自动重试');
   }
   
   // 旧的 UI 更新已移除，使用时间线导航
@@ -293,8 +283,6 @@ async function init() {
   // ========== 初始化右侧时间线导航器 (仅当找到节点时) ==========
   if (totalCount > 0) {
     initTimelineNavigator();
-  } else {
-    console.log('⏳ 暂未找到问题，等待后续扫描初始化时间线');
   }
   // ========== 时间线初始化逻辑调整结束 ==========
   
@@ -328,8 +316,6 @@ async function init() {
         
         // 如果数量增加了，说明有新对话
         if (newCount > oldCount) {
-          console.log(`🆕 检测到新对话: ${oldCount} -> ${newCount}`);
-          
           // 重新初始化时间线（RightSideTimelineNavigator 会处理节点重绘和布局）
           initTimelineNavigator();
           
@@ -345,14 +331,12 @@ async function init() {
     // 只有在问题数为0时才尝试刷新（说明页面可能还在加载）
     if (indexManager.getTotalCount() === 0) {
       if (indexManager.needsRefresh()) {
-        console.log('🔄 页面可能还在加载，尝试重新扫描问题');
         indexManager.refresh();
         const newCount = indexManager.getTotalCount();
         
         if (newCount > 0) {
           // 找到问题后立即锁定
           isListLocked = true;
-          console.log(`✅ 扫描到 ${newCount} 个问题，列表已锁定`);
           indexManager.updateCurrentIndexByScroll(window.scrollY);
           
           // ============ 延迟初始化的时间线 ============
@@ -374,7 +358,6 @@ async function init() {
   if (totalCount === 0) {
     setTimeout(() => {
       if (!isListLocked) {
-        console.log('⏱️ 超时：停止自动扫描，请手动刷新页面或切换对话');
         isListLocked = true;
       }
     }, 5000);
@@ -394,7 +377,6 @@ let lastUrl = window.location.href;
 const urlObserver = new MutationObserver(() => {
   const currentUrl = window.location.href;
   if (currentUrl !== lastUrl) {
-    console.log('🔄 检测到 URL 变化，准备重新初始化');
     lastUrl = currentUrl;
     
     // 立即清理 UI，防止新旧节点混淆
@@ -418,7 +400,6 @@ urlObserver.observe(document.documentElement, {
 
 // 同时监听 popstate 事件（浏览器前进后退）
 window.addEventListener('popstate', () => {
-  console.log('🔄 检测到浏览器导航，重新初始化');
   setTimeout(() => {
     init();
   }, 500);
@@ -433,18 +414,13 @@ if (document.readyState === 'loading') {
 
 // 监听来自 background 和 options 的消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Message received in content script:', message);
-  
   if (message.type === 'LLM_NAV_PREV_ANSWER') {
-    console.log('快捷键触发：导航到上一条回答');
     navigateToPrev();
     sendResponse({ success: true });
   } else if (message.type === 'LLM_NAV_NEXT_ANSWER') {
-    console.log('快捷键触发：导航到下一条回答');
     navigateToNext();
     sendResponse({ success: true });
   } else if (message.type === 'LLM_NAV_TOGGLE_UI') {
-    console.log('快捷键触发：切换时间线导航显示');
     if (timelineNavigator) {
       timelineNavigator.toggle();
       sendResponse({ success: true });
@@ -452,13 +428,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: false, error: 'Timeline not initialized' });
     }
   } else if (message.type === 'LLM_NAV_UPDATE_THEME') {
-    console.log('配置更新：切换主题', message.theme);
     if (timelineNavigator) {
       timelineNavigator.setTheme(message.theme);
     }
     sendResponse({ success: true });
   } else if (message.type === 'LLM_NAV_TOGGLE_PIN') {
-    console.log('快捷键触发：标记/取消标记当前节点');
     if (timelineNavigator) {
       timelineNavigator.togglePinnedCurrent();
     }
