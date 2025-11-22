@@ -182,6 +182,24 @@
         <span class="slider"></span>
       </label>
     </div>
+    
+    <!-- 自定义 URL 部分 -->
+    <div class="option-item" style="flex-direction: column; align-items: flex-start; border-bottom: none; padding-top: 20px;">
+      <div class="option-label" style="margin-bottom: 15px; width: 100%;">
+        <span class="title">自定义站点</span>
+        <span class="description">添加其他 LLM 网站（将使用 ChatGPT 的适配逻辑）</span>
+      </div>
+      
+      <div style="display: flex; width: 100%; gap: 10px; margin-bottom: 15px;">
+        <input type="text" id="custom-url-input" placeholder="输入域名，如: chat.example.com" 
+               style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+        <button id="add-url-btn" style="padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer;">添加</button>
+      </div>
+      
+      <ul id="custom-url-list" style="list-style: none; width: 100%;">
+        <!-- URL 列表将由 JS 动态生成 -->
+      </ul>
+    </div>
   </div>
   
   <div class="option-group">

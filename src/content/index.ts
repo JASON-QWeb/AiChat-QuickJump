@@ -236,8 +236,12 @@ async function init() {
   isInitializing = true;
   
   try {
+    // 从存储中加载自定义 URL
+    const settings = await chrome.storage.sync.get('custom_urls');
+    const customUrls = settings.custom_urls || [];
+    
     // 获取当前页面适配的站点适配器
-    const adapter = getActiveAdapter(window.location);
+    const adapter = getActiveAdapter(window.location, customUrls);
     
     if (!adapter) {
       console.log('LLM Answer Navigator: 当前页面不支持，跳过初始化');

@@ -63,6 +63,8 @@ export interface SiteAdapter {
 
 // 导入所有适配器
 import { chatgptAdapter } from './chatgptAdapter';
+import { claudeAdapter } from './claudeAdapter';
+import { geminiAdapter } from './geminiAdapter';
 
 /**
  * 所有已注册的适配器列表
@@ -70,22 +72,40 @@ import { chatgptAdapter } from './chatgptAdapter';
  */
 const adapters: SiteAdapter[] = [
   chatgptAdapter,
-  // 未来可以在这里添加更多适配器，例如：
-  // claudeAdapter,
-  // geminiAdapter,
+  claudeAdapter,
+  geminiAdapter
 ];
 
 /**
  * 根据当前 URL 获取合适的适配器
  * @param location - 当前页面的 location 对象
+ * @param customUrls - 可选的自定义 URL 列表
  * @returns 找到的适配器，如果没有匹配则返回 null
  */
-export function getActiveAdapter(location: Location): SiteAdapter | null {
+export function getActiveAdapter(location: Location, customUrls: string[] = []): SiteAdapter | null {
+  // 1. 检查内置适配器
   for (const adapter of adapters) {
     if (adapter.isSupported(location)) {
       return adapter;
     }
   }
+  
+  // 2. 检查自定义 URL
+  // 如果匹配到自定义 URL，使用 ChatGPT 适配器（默认复用逻辑）
+  if (customUrls.length > 0) {
+    const hostname = location.hostname;
+    if (customUrls.some(url => hostname === url || hostname.endsWith('.' + url))) {
+      console.log('Matched custom URL, using ChatGPT adapter');
+      // 创建一个新的适配器实例，或者直接复用 ChatGPT 适配器
+      // 这里我们通过 Object.create 复用，但修改 name
+      const customAdapter = Object.create(chatgptAdapter);
+      customAdapter.name = 'Custom Site (ChatGPT Compatible)';
+      // 覆盖 isSupported 确保它总是返回 true (因为外层已经匹配了)
+      customAdapter.isSupported = () => true;
+      return customAdapter;
+    }
+  }
+  
   return null;
 }
 

@@ -279,10 +279,15 @@ export class RightSideTimelineNavigator {
     const startPress = () => {
       isLongPress = false;
       
-      // 如果当前已经标记了，那么填充层应该是可见的，长按是“消退”
-      // 但为了简化交互，我们统一用“填充”来表示操作进行中
-      // 如果是取消标记，我们可以用另一个颜色，或者反向动画
-      // 这里简单处理：总是填充橙色，表示“正在进行标记操作”
+      // 判断是标记还是取消标记，设置不同的填充色
+      const isAlreadyPinned = this.pinnedNodes.has(String(index));
+      if (isAlreadyPinned) {
+        // 取消标记：使用灰色/白色填充，表示"擦除"
+        fillLayer.style.backgroundColor = '#E0E0E0';
+      } else {
+        // 标记：使用橙色填充
+        fillLayer.style.backgroundColor = '#FF9800';
+      }
       
       // 开始动画：慢慢变大
       fillLayer.style.transition = 'transform 500ms linear';
