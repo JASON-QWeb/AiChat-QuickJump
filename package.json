@@ -1,7 +1,7 @@
 {
-  "name": "ai-chat-prompt-navigator",
+  "name": "ai-chat-quick-navigator",
   "version": "1.2.2",
-  "description": "AI Chat Prompt Navigator - Make AI Conversation Navigation Simple and Efficient",
+  "description": "AI Chat Quick Navigator - Make AI Conversation Navigation Simple and Efficient",
   "scripts": {
     "build": "node build.js",
     "dev": "node build.js --watch",

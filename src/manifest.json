@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "AI Chat Prompt Navigator",
+  "name": "Ai Chat Quick Navigator",
   "version": "1.2.2",
   "description": "AI 对话快捷导航助手。支持 ChatGPT、Claude、Gemini、DeepSeek，提供快捷键跳转、侧边时间线导航和重点对话标记功能。",
   "permissions": [
