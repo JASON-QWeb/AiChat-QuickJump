@@ -9,6 +9,8 @@ import { themes, resolveTheme, type ThemeMode, type TimelineTheme } from './them
 export class RightSideTimelineNavigator {
   private container: HTMLElement;
   private timelineBar: HTMLElement;
+  private nodesWrapper: HTMLElement;
+  private nodesContent: HTMLElement;
   private nodes: HTMLElement[] = [];
   private items: PromptAnswerItem[] = [];
   private activeIndex: number = 0;
@@ -18,12 +20,34 @@ export class RightSideTimelineNavigator {
   private resizeObserver: ResizeObserver | null = null;
   private conversationId: string | null = null;
   private pinnedNodes: Set<string> = new Set();
+  private contentHeight: number = 0;
+
+  private slider: HTMLElement | null = null;
+  private sliderHandle: HTMLElement | null = null;
+  private sliderVisible: boolean = false;
+  private sliderDragging: boolean = false;
+  private sliderPointerId: number | null = null;
+  private sliderDragStartY: number = 0;
+  private sliderDragStartHandleTop: number = 0;
+  private sliderDragMaxTop: number = 0;
+  private sliderPointerMoveHandler?: (event: PointerEvent) => void;
+  private sliderPointerUpHandler?: (event: PointerEvent) => void;
+
+  private readonly NODE_PADDING = 30;
+  private readonly MIN_NODE_GAP = 28;
   
   // 当前主题
   private currentTheme: TimelineTheme = themes.light;
   
   // 防止 ResizeObserver 无限循环的标志
   private isUpdatingPositions: boolean = false;
+
+  private readonly handleNodesScroll = () => {
+    if (this.sliderDragging) {
+      return;
+    }
+    this.syncSliderToScroll();
+  };
 
   constructor() {
     // 确保主题已初始化
@@ -34,10 +58,17 @@ export class RightSideTimelineNavigator {
 
     this.container = this.createContainer();
     this.timelineBar = this.createTimelineBar();
+    this.nodesWrapper = this.createNodesWrapper();
+    this.nodesContent = this.createNodesContent();
     this.tooltip = this.createTooltip();
     this.container.appendChild(this.timelineBar);
+    this.container.appendChild(this.nodesWrapper);
+    this.nodesWrapper.appendChild(this.nodesContent);
     document.body.appendChild(this.container);
     document.body.appendChild(this.tooltip);
+
+    this.createSlider();
+    this.nodesWrapper.addEventListener('scroll', this.handleNodesScroll, { passive: true });
     
     // 监听容器大小变化
     this.resizeObserver = new ResizeObserver(() => {
@@ -66,6 +97,14 @@ export class RightSideTimelineNavigator {
     
     // 更新时间线主干颜色
     this.timelineBar.style.backgroundColor = this.currentTheme.timelineBarColor;
+
+    if (this.slider) {
+      this.slider.style.borderColor = this.currentTheme.timelineBarColor;
+    }
+    if (this.sliderHandle) {
+      this.sliderHandle.style.backgroundColor = this.currentTheme.activeColor;
+      this.sliderHandle.style.boxShadow = `0 0 8px ${this.currentTheme.activeShadow}`;
+    }
 
     // 更新 Tooltip 样式
     this.tooltip.style.backgroundColor = this.currentTheme.tooltipBackgroundColor;
@@ -110,7 +149,7 @@ export class RightSideTimelineNavigator {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'flex-start',
-      pointerEvents: 'none'
+      pointerEvents: 'auto'
     });
 
     return container;
@@ -132,10 +171,46 @@ export class RightSideTimelineNavigator {
       backgroundColor: this.currentTheme.timelineBarColor, // 使用主题色
       transform: 'translateX(-50%)',
       pointerEvents: 'none',
-      transition: 'background-color 0.3s ease'
+      transition: 'background-color 0.3s ease',
+      zIndex: '1'
     });
 
     return bar;
+  }
+
+  private createNodesWrapper(): HTMLElement {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'timeline-nodes-wrapper';
+    Object.assign(wrapper.style, {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+      width: '100%',
+      height: '100%',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+      pointerEvents: 'auto',
+      zIndex: '2'
+    });
+    wrapper.addEventListener('wheel', (event) => {
+      // 阻止冒泡，避免影响页面主体滚动
+      event.stopPropagation();
+    });
+    return wrapper;
+  }
+
+  private createNodesContent(): HTMLElement {
+    const content = document.createElement('div');
+    content.className = 'timeline-nodes-content';
+    Object.assign(content.style, {
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      pointerEvents: 'auto'
+    });
+    return content;
   }
 
   /**
@@ -409,9 +484,16 @@ export class RightSideTimelineNavigator {
 
     if (newCount === 0) {
       // 清空节点
-      this.nodes.forEach(node => node.remove());
-      this.nodes = [];
-      return;
+        this.nodes.forEach(node => node.remove());
+        this.nodes = [];
+        this.nodesContent.style.height = '100%';
+        this.nodesWrapper.scrollTop = 0;
+        this.contentHeight = 0;
+        this.sliderVisible = false;
+        if (this.slider) {
+          this.slider.style.display = 'none';
+        }
+        return;
     }
 
     // 1. 如果新数量少于当前数量（例如切换对话），移除多余节点
@@ -437,7 +519,7 @@ export class RightSideTimelineNavigator {
         node.style.opacity = '0';
         node.style.transform = 'translate(-50%, -50%) scale(0)';
         
-        this.container.appendChild(node);
+        this.nodesContent.appendChild(node);
         this.nodes.push(node);
         
         // 下一帧显示，触发过渡动画
@@ -469,33 +551,37 @@ export class RightSideTimelineNavigator {
       const count = this.items.length;
       if (count === 0) return;
 
-      const containerHeight = this.container.clientHeight;
-      // 容器可能还没渲染出来
-      if (containerHeight === 0) return;
+      const wrapperHeight = this.nodesWrapper.clientHeight;
+      if (wrapperHeight === 0) return;
 
-      const padding = 30; // 上下留白
-      const usableHeight = containerHeight - padding * 2;
+      const padding = this.NODE_PADDING;
+      const desiredHeight = padding * 2 + Math.max(0, (count - 1)) * this.MIN_NODE_GAP;
+      this.contentHeight = Math.max(wrapperHeight, desiredHeight);
+      this.nodesContent.style.height = `${this.contentHeight}px`;
+
+      const usableHeight = this.contentHeight - padding * 2;
 
       this.items.forEach((item, index) => {
         const node = this.nodes[index];
         if (!node) return;
 
-        let topPosition = padding;
-
-        if (count === 1) {
-          // 如果只有一个节点，显示在顶部
-          topPosition = padding;
+        let ratio: number;
+        if (typeof item.relativePosition === 'number' && !isNaN(item.relativePosition)) {
+          ratio = Math.max(0, Math.min(1, item.relativePosition));
+        } else if (count === 1) {
+          ratio = 0;
         } else {
-          // 多个节点：按索引均匀分布
-          // 公式：Padding + (当前索引 / (总数 - 1)) * 可用高度
-          // index=0 -> 0% (Top)
-          // index=max -> 100% (Bottom)
-          const ratio = index / (count - 1);
-          topPosition = padding + ratio * usableHeight;
+          ratio = index / (count - 1);
         }
-        
+
+        const topPosition = padding + ratio * usableHeight;
         node.style.top = `${topPosition}px`;
+        node.dataset.timelineTop = String(topPosition);
       });
+
+      this.updateSliderVisibility();
+      this.syncSliderToScroll();
+      this.ensureActiveNodeVisible();
     } finally {
       // 确保标志位被重置
       this.isUpdatingPositions = false;
@@ -507,6 +593,34 @@ export class RightSideTimelineNavigator {
    */
   refreshPositions(): void {
     this.updateNodePositions();
+  }
+
+  /**
+   * 确保当前激活节点在可视区域内
+   */
+  private ensureActiveNodeVisible(): void {
+    const wrapperHeight = this.nodesWrapper.clientHeight || 0;
+    if (wrapperHeight === 0) return;
+    const activeNode = this.nodes[this.activeIndex];
+    if (!activeNode) return;
+
+    const top = parseFloat(activeNode.dataset.timelineTop || activeNode.style.top || '0');
+    const bottom = top + activeNode.offsetHeight;
+    const visibleTop = this.nodesWrapper.scrollTop;
+    const visibleBottom = visibleTop + wrapperHeight;
+    const padding = 40;
+
+    let targetScroll = visibleTop;
+    if (top < visibleTop + padding) {
+      targetScroll = Math.max(0, top - padding);
+    } else if (bottom > visibleBottom - padding) {
+      targetScroll = Math.min(this.contentHeight - wrapperHeight, bottom - wrapperHeight + padding);
+    }
+
+    if (isFinite(targetScroll) && targetScroll !== visibleTop) {
+      this.nodesWrapper.scrollTop = targetScroll;
+      this.syncSliderToScroll();
+    }
   }
 
   /**
@@ -528,6 +642,7 @@ export class RightSideTimelineNavigator {
     // 设置新的 active 节点
     this.activeIndex = index;
     this.updateNodeStyle(this.nodes[index], index);
+    this.ensureActiveNodeVisible();
   }
 
   /**
@@ -596,7 +711,152 @@ export class RightSideTimelineNavigator {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
+    this.nodesWrapper.removeEventListener('scroll', this.handleNodesScroll);
+    this.detachSliderEvents();
     this.container.remove();
     this.tooltip.remove();
+    this.slider?.remove();
+  }
+
+  /**
+   * 构建可拖动的滚动条（置于节点列左侧）
+   */
+  private createSlider(): void {
+    const slider = document.createElement('div');
+    slider.className = 'timeline-slider';
+    Object.assign(slider.style, {
+      position: 'absolute',
+      left: '-18px',
+      width: '6px',
+      borderRadius: '999px',
+      border: `1px solid ${this.currentTheme.timelineBarColor}`,
+      background: 'rgba(255,255,255,0.05)',
+      display: 'none',
+      pointerEvents: 'auto',
+      zIndex: '3'
+    });
+
+    const handle = document.createElement('div');
+    handle.className = 'timeline-slider-handle';
+    Object.assign(handle.style, {
+      position: 'absolute',
+      left: '-4px',
+      width: '14px',
+      height: '40px',
+      borderRadius: '8px',
+      cursor: 'grab',
+      backgroundColor: this.currentTheme.activeColor,
+      boxShadow: `0 0 8px ${this.currentTheme.activeShadow}`,
+      top: '0'
+    });
+
+    slider.appendChild(handle);
+    this.container.appendChild(slider);
+
+    handle.addEventListener('pointerdown', (event) => this.startSliderDrag(event));
+
+    this.slider = slider;
+    this.sliderHandle = handle;
+  }
+
+  private updateSliderVisibility(): void {
+    if (!this.slider || !this.sliderHandle) return;
+
+    const wrapperHeight = this.nodesWrapper.clientHeight || 0;
+    if (wrapperHeight === 0 || this.contentHeight <= wrapperHeight + 1) {
+      this.slider.style.display = 'none';
+      this.sliderVisible = false;
+      this.sliderHandle.style.top = '0px';
+      return;
+    }
+
+    this.sliderVisible = true;
+    const sliderHeight = Math.max(100, Math.min(wrapperHeight, 240));
+    this.slider.style.display = 'flex';
+    this.slider.style.height = `${sliderHeight}px`;
+    this.slider.style.top = `calc(50% - ${sliderHeight / 2}px)`;
+
+    const ratio = wrapperHeight / this.contentHeight;
+    const handleHeight = Math.max(24, Math.min(sliderHeight - 12, sliderHeight * ratio));
+    this.sliderHandle.style.height = `${handleHeight}px`;
+    this.sliderDragMaxTop = Math.max(1, sliderHeight - handleHeight);
+  }
+
+  private syncSliderToScroll(): void {
+    if (!this.slider || !this.sliderHandle || !this.sliderVisible) return;
+
+    const wrapperHeight = this.nodesWrapper.clientHeight || 0;
+    const maxScroll = Math.max(1, this.contentHeight - wrapperHeight);
+    const ratio = maxScroll > 0 ? this.nodesWrapper.scrollTop / maxScroll : 0;
+    const sliderHeight = this.slider.clientHeight || 1;
+    const handleHeight = this.sliderHandle.clientHeight || 1;
+    const maxTop = Math.max(1, sliderHeight - handleHeight);
+    this.sliderHandle.style.top = `${ratio * maxTop}px`;
+  }
+
+  private startSliderDrag(event: PointerEvent): void {
+    if (!this.sliderHandle || !this.slider || !this.sliderVisible) return;
+    event.preventDefault();
+
+    this.sliderDragging = true;
+    this.sliderPointerId = event.pointerId;
+    this.sliderHandle.setPointerCapture(event.pointerId);
+    this.sliderHandle.style.cursor = 'grabbing';
+    this.sliderDragStartY = event.clientY;
+    this.sliderDragStartHandleTop = this.sliderHandle.offsetTop || 0;
+
+    const sliderHeight = this.slider.clientHeight || 1;
+    const handleHeight = this.sliderHandle.clientHeight || 1;
+    this.sliderDragMaxTop = Math.max(1, sliderHeight - handleHeight);
+
+    this.sliderPointerMoveHandler = (e) => this.handleSliderDrag(e);
+    this.sliderPointerUpHandler = (e) => this.endSliderDrag(e);
+    window.addEventListener('pointermove', this.sliderPointerMoveHandler, { passive: false });
+    window.addEventListener('pointerup', this.sliderPointerUpHandler);
+  }
+
+  private handleSliderDrag(event: PointerEvent): void {
+    if (!this.sliderDragging || !this.sliderHandle || !this.sliderVisible) return;
+
+    const deltaY = event.clientY - this.sliderDragStartY;
+    let nextTop = this.sliderDragStartHandleTop + deltaY;
+    nextTop = Math.max(0, Math.min(nextTop, this.sliderDragMaxTop));
+    this.sliderHandle.style.top = `${nextTop}px`;
+
+    const wrapperHeight = this.nodesWrapper.clientHeight || 0;
+    const maxScroll = Math.max(1, this.contentHeight - wrapperHeight);
+    const ratio = this.sliderDragMaxTop > 0 ? nextTop / this.sliderDragMaxTop : 0;
+    this.nodesWrapper.scrollTop = ratio * maxScroll;
+    event.preventDefault();
+  }
+
+  private endSliderDrag(event?: PointerEvent): void {
+    if (!this.sliderDragging) return;
+    if (event) {
+      event.preventDefault();
+    }
+    this.sliderDragging = false;
+    if (this.sliderPointerId !== null && this.sliderHandle) {
+      try {
+        this.sliderHandle.releasePointerCapture(this.sliderPointerId);
+      } catch {
+        // ignore
+      }
+    }
+    this.sliderPointerId = null;
+    this.sliderHandle?.style.setProperty('cursor', 'grab');
+    this.detachSliderEvents();
+    this.syncSliderToScroll();
+  }
+
+  private detachSliderEvents(): void {
+    if (this.sliderPointerMoveHandler) {
+      window.removeEventListener('pointermove', this.sliderPointerMoveHandler);
+      this.sliderPointerMoveHandler = undefined;
+    }
+    if (this.sliderPointerUpHandler) {
+      window.removeEventListener('pointerup', this.sliderPointerUpHandler);
+      this.sliderPointerUpHandler = undefined;
+    }
   }
 }
