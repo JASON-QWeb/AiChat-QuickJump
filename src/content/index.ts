@@ -1,10 +1,12 @@
 // Content Script
 import { getActiveAdapter } from './siteAdapters/index';
 import { AnswerIndexManager } from './navigation/answerIndexManager';
+import { NavigatorUI } from './navigation/navigatorUI';
 
 console.log('LLM Answer Navigator: Content script loaded');
 
 let indexManager: AnswerIndexManager | null = null;
+let navigatorUI: NavigatorUI | null = null;
 
 /**
  * 防抖函数
@@ -21,12 +23,60 @@ function debounce<T extends (...args: any[]) => void>(
 }
 
 /**
+ * 导航到指定的回答
+ */
+function navigateToAnswer(index: number): void {
+  if (!indexManager) return;
+  
+  indexManager.setCurrentIndex(index);
+  const node = indexManager.getCurrentNode();
+  
+  if (node) {
+    // 简单滚动到该节点（后续将用更好的滚动和高亮模块替换）
+    node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  
+  // 更新 UI 显示
+  updateUI();
+}
+
+/**
+ * 导航到上一条回答
+ */
+function navigateToPrev(): void {
+  if (indexManager && indexManager.moveToPrev()) {
+    navigateToAnswer(indexManager.getCurrentIndex());
+  }
+}
+
+/**
+ * 导航到下一条回答
+ */
+function navigateToNext(): void {
+  if (indexManager && indexManager.moveToNext()) {
+    navigateToAnswer(indexManager.getCurrentIndex());
+  }
+}
+
+/**
+ * 更新 UI 显示
+ */
+function updateUI(): void {
+  if (navigatorUI && indexManager) {
+    navigatorUI.updateIndex(
+      indexManager.getCurrentIndex(),
+      indexManager.getTotalCount()
+    );
+  }
+}
+
+/**
  * 处理滚动事件
  */
 const handleScroll = debounce(() => {
   if (indexManager) {
     indexManager.updateCurrentIndexByScroll(window.scrollY);
-    console.log(`当前回答: ${indexManager.getCurrentIndex() + 1}/${indexManager.getTotalCount()}`);
+    updateUI();
   }
 }, 200);
 
@@ -49,6 +99,12 @@ function init() {
   
   console.log(`LLM Answer Navigator: 初始化完成，共 ${indexManager.getTotalCount()} 个回答`);
   
+  // 初始化导航 UI
+  navigatorUI = new NavigatorUI();
+  navigatorUI.onPrev(navigateToPrev);
+  navigatorUI.onNext(navigateToNext);
+  updateUI();
+  
   // 监听滚动事件
   window.addEventListener('scroll', handleScroll, { passive: true });
   
@@ -57,6 +113,7 @@ function init() {
     if (indexManager && indexManager.needsRefresh()) {
       console.log('检测到页面变化，刷新回答列表');
       indexManager.refresh();
+      updateUI();
     }
   }, 1000));
   
@@ -64,8 +121,6 @@ function init() {
     childList: true,
     subtree: true
   });
-  
-  // 后续将在这里添加 UI 和其他功能
 }
 
 // 页面加载完成后初始化
