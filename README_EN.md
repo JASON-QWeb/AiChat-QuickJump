@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <a href="README.md"><img src="https://img.shields.io/badge/English-README-green"></a>
-  <a href="README_CN.md"><img src="https://img.shields.io/badge/中文-README-blue"></a>
+  <a href="README.md"><img src="https://img.shields.io/badge/中文-README-blue"></a>
+  <a href="README_EN.md"><img src="https://img.shields.io/badge/English-README-green"></a>
   <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white" alt="Chrome Extension">
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
