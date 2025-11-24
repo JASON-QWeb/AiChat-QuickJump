@@ -154,7 +154,7 @@
   </div>
   
   <div class="option-group">
-    <h2 data-i18n="options.general">通用设置</h2>
+    <h2 data-i18n="options.settings">设置</h2>
     <div class="option-item">
       <div class="option-label">
         <span class="title" data-i18n="options.language">语言 / Language</span>
@@ -166,10 +166,8 @@
         <option value="en">English</option>
       </select>
     </div>
-  </div>
-
-  <div class="option-group">
-    <h2 data-i18n="options.theme">主题设置</h2>
+    
+    <!-- 主题设置移动到这里 -->
     <div class="option-item">
       <div class="option-label">
         <span class="title" data-i18n="options.theme.ui">界面主题</span>
@@ -186,7 +184,7 @@
       </select>
     </div>
   </div>
-  
+
   <div class="option-group">
     <h2 data-i18n="options.sites">站点支持</h2>
     <div class="option-item">
@@ -283,7 +281,7 @@
     </div>
     <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 13px;">
       <span data-i18n="options.shortcuts.custom.hint">💡 想要自定义快捷键？访问 </span>
-      <a href="chrome://extensions/shortcuts" target="_blank" style="color: #4CAF50; text-decoration: none;">
+      <a href="#" id="shortcuts-link" style="color: #4CAF50; text-decoration: none;">
         chrome://extensions/shortcuts
       </a>
     </div>
