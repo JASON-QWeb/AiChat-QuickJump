@@ -1,5 +1,68 @@
 // Background Service Worker
 
+const CUSTOM_SCRIPT_ID = 'llm-nav-custom-sites';
+
+/**
+ * 更新自定义站点的 Content Scripts
+ */
+async function updateContentScripts(customUrls: string[]) {
+  try {
+    // 1. 获取现有的脚本
+    const scripts = await chrome.scripting.getRegisteredContentScripts();
+    const scriptIds = scripts.map(s => s.id);
+    
+    // 2. 如果存在旧的注册，先移除
+    if (scriptIds.includes(CUSTOM_SCRIPT_ID)) {
+      await chrome.scripting.unregisterContentScripts({ ids: [CUSTOM_SCRIPT_ID] });
+    }
+
+    if (!customUrls || customUrls.length === 0) return;
+
+    // 3. 构建匹配规则
+    const matches = customUrls.map(url => {
+        // 移除可能存在的协议前缀，统一处理
+        let domain = url.replace(/^https?:\/\//, '');
+        // 移除末尾斜杠
+        domain = domain.replace(/\/$/, '');
+        
+        // 生成 http 和 https 两种匹配
+        // 注意：Manifest 中必须有相应的 host_permissions 才能生效
+        return [`http://${domain}/*`, `https://${domain}/*`];
+    }).flat();
+
+    // 4. 注册新脚本
+    await chrome.scripting.registerContentScripts([{
+      id: CUSTOM_SCRIPT_ID,
+      js: ['content/index.js'],
+      matches: matches,
+      runAt: 'document_idle'
+    }]);
+    
+    // console.log('Custom site scripts registered for:', matches);
+  } catch (err) {
+    // console.error('Failed to update content scripts:', err);
+  }
+}
+
+// 监听配置变化
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'sync' && changes.custom_urls) {
+    updateContentScripts(changes.custom_urls.newValue || []);
+  }
+});
+
+// 初始化/安装时注册
+chrome.runtime.onInstalled.addListener(async () => {
+    const { custom_urls } = await chrome.storage.sync.get('custom_urls');
+    updateContentScripts(custom_urls || []);
+});
+
+// 浏览器启动时注册
+chrome.runtime.onStartup.addListener(async () => {
+    const { custom_urls } = await chrome.storage.sync.get('custom_urls');
+    updateContentScripts(custom_urls || []);
+});
+
 // 监听快捷键命令
 chrome.commands.onCommand.addListener((command) => {
   
@@ -33,4 +96,3 @@ chrome.commands.onCommand.addListener((command) => {
     }
   });
 });
-

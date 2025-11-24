@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AiChat Quick Navigator</title>
+  <title>Ai Chat Quick jump</title>
   <style>
     :root {
       --primary-color: #4CAF50;
@@ -137,16 +137,16 @@
 </head>
 <body>
   <div class="header">
-    <h2>AiChat Quick Navigator</h2>
-    <p class="desc">在对话页面中快速导航 AI 回答</p>
+    <h2 data-i18n="popup.title">Ai Chat Quick jump</h2>
+    <p class="desc" data-i18n="popup.desc">在对话页面中快速导航 AI 回答</p>
   </div>
 
-  <div class="section-title">快捷键 (Shortcuts)</div>
+  <div class="section-title" data-i18n="popup.shortcuts">快捷键 (Shortcuts)</div>
   
   <ul class="shortcut-list">
     <li class="shortcut-item">
       <div class="shortcut-label">
-        <span>↕️ 切换回答</span>
+        <span data-i18n="popup.switch">↕️ 切换回答</span>
       </div>
       <div class="keys-container">
         <div class="keys">
@@ -158,7 +158,7 @@
 
     <li class="shortcut-item">
       <div class="shortcut-label">
-        <span>📌 标记/取消</span>
+        <span data-i18n="popup.mark">📌 标记/取消</span>
       </div>
       <div class="keys-container">
         <div class="keys">
@@ -170,7 +170,7 @@
 
     <li class="shortcut-item">
       <div class="shortcut-label">
-        <span>👁️ 显示/隐藏</span>
+        <span data-i18n="popup.toggle">👁️ 显示/隐藏</span>
       </div>
       <div class="keys-container">
         <div class="keys">
@@ -184,11 +184,22 @@
   <div class="footer">
     <div class="hint">
       <span>🎨</span>
-      <span>右键点击插件图标 -> 选项，可自定义主题颜色和开启其他站点支持。</span>
+      <span data-i18n="popup.hint.theme">右键点击插件图标 -> 选项，可自定义主题颜色和开启其他站点支持。</span>
     </div>
     <div class="hint">
       <span>⚙️</span>
-      <span>快捷键访问 <a href="#" id="shortcuts-link">chrome://extensions/shortcuts</a> 修改。</span>
+      <span>
+        <span data-i18n="popup.hint.shortcuts">快捷键访问</span> 
+        <a href="#" id="shortcuts-link">chrome://extensions/shortcuts</a> 
+        <span data-i18n="popup.hint.modify">修改。</span>
+      </span>
+    </div>
+    <div class="hint" style="margin-top: 12px; padding-top: 8px; border-top: 1px dashed var(--border-color);">
+      <span>💌</span>
+      <span>
+        <span data-i18n="popup.feedback">任何意见想法，欢迎访问</span> 
+        <a href="http://www.aichatjump.click" target="_blank">www.aichatjump.click</a>
+      </span>
     </div>
   </div>
 

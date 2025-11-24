@@ -6,7 +6,7 @@ import { themes, resolveTheme, type ThemeMode, type TimelineTheme } from './them
  * 右侧时间线导航器
  * 在页面右侧显示纵向时间线，每个节点代表一个对话
  */
-export class RightSideTimelineNavigator {
+export class RightSideTimelinejump {
   private container: HTMLElement;
   private timelineBar: HTMLElement;
   private nodesWrapper: HTMLElement;
@@ -126,7 +126,7 @@ export class RightSideTimelineNavigator {
    */
   private createContainer(): HTMLElement {
     const container = document.createElement('div');
-    container.id = 'llm-timeline-navigator';
+    container.id = 'llm-timeline-jump';
     
     // 样式
     Object.assign(container.style, {
@@ -247,8 +247,18 @@ export class RightSideTimelineNavigator {
    * 显示 tooltip
    */
   private showTooltip(text: string, nodeElement: HTMLElement): void {
+    // 检查是否被标记
+    const index = nodeElement.dataset.index;
+    const isPinned = index && this.pinnedNodes.has(index);
+
     // 截断文本（最多 80 字符）
-    const displayText = text.length > 80 ? text.substring(0, 80) + '...' : text;
+    let displayText = text.length > 80 ? text.substring(0, 80) + '...' : text;
+
+    // 如果被标记，添加星号
+    if (isPinned) {
+      displayText = '🌟 ' + displayText;
+    }
+
     this.tooltip.textContent = displayText;
     this.tooltip.style.display = 'block';
 
@@ -403,7 +413,9 @@ export class RightSideTimelineNavigator {
           this.updateNodeStyle(node, index);
           
           // 震动反馈 (如果支持)
-          if (navigator.vibrate) navigator.vibrate(50);
+          if (navigator.vibrate) {
+            try { navigator.vibrate(50); } catch (e) {}
+          }
         }
         
         // 无论结果如何，重置填充层（因为状态改变后 updateNodeStyle 会处理背景色）
@@ -692,7 +704,9 @@ export class RightSideTimelineNavigator {
     this.updateNodeStyle(this.nodes[index], index);
     
     // 震动反馈
-    if (navigator.vibrate) navigator.vibrate(50);
+    if (navigator.vibrate) {
+      try { navigator.vibrate(50); } catch (e) {}
+    }
   }
 
   /**

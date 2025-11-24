@@ -1,4 +1,5 @@
 // Options page script
+import { getTranslation, type Language } from '../utils/i18n';
 
 // 配置键
 const CONFIG_KEYS = {
@@ -7,8 +8,33 @@ const CONFIG_KEYS = {
   ENABLE_GEMINI: 'enable_gemini',
   ENABLE_DEEPSEEK: 'enable_deepseek',
   UI_THEME: 'ui_theme',
-  CUSTOM_URLS: 'custom_urls'
+  CUSTOM_URLS: 'custom_urls',
+  LANGUAGE: 'language'
 };
+
+let currentLanguage: Language = 'auto';
+
+// 应用翻译
+function applyTranslations(lang: Language) {
+  const elements = document.querySelectorAll('[data-i18n]');
+  elements.forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (key) {
+      el.textContent = getTranslation(key, lang);
+    }
+  });
+
+  const inputs = document.querySelectorAll('[data-i18n-placeholder]');
+  inputs.forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (key) {
+      (el as HTMLInputElement).placeholder = getTranslation(key, lang);
+    }
+  });
+  
+  // 更新页面标题
+  document.title = getTranslation('options.title', lang);
+}
 
 // 加载配置
 async function loadSettings(): Promise<void> {
@@ -19,7 +45,8 @@ async function loadSettings(): Promise<void> {
       CONFIG_KEYS.ENABLE_GEMINI,
       CONFIG_KEYS.ENABLE_DEEPSEEK,
       CONFIG_KEYS.UI_THEME,
-      CONFIG_KEYS.CUSTOM_URLS
+      CONFIG_KEYS.CUSTOM_URLS,
+      CONFIG_KEYS.LANGUAGE
     ]);
     
     const enableChatGPT = result[CONFIG_KEYS.ENABLE_CHATGPT] !== false; // 默认启用
@@ -28,7 +55,11 @@ async function loadSettings(): Promise<void> {
     const enableDeepSeek = result[CONFIG_KEYS.ENABLE_DEEPSEEK] !== false; // 默认启用
     const uiTheme = result[CONFIG_KEYS.UI_THEME] || 'auto'; // 默认跟随系统
     const customUrls = result[CONFIG_KEYS.CUSTOM_URLS] || [];
+    const language = result[CONFIG_KEYS.LANGUAGE] || 'auto';
     
+    currentLanguage = language;
+    applyTranslations(currentLanguage);
+
     const setCheckbox = (id: string, checked: boolean) => {
         const checkbox = document.getElementById(id) as HTMLInputElement;
         if (checkbox) checkbox.checked = checked;
@@ -42,6 +73,11 @@ async function loadSettings(): Promise<void> {
     const themeSelect = document.getElementById('ui-theme') as HTMLSelectElement;
     if (themeSelect) {
       themeSelect.value = uiTheme;
+    }
+    
+    const langSelect = document.getElementById('language-select') as HTMLSelectElement;
+    if (langSelect) {
+      langSelect.value = language;
     }
     
     renderCustomUrls(customUrls);
@@ -75,7 +111,7 @@ function renderCustomUrls(urls: string[]): void {
     span.style.color = '#333';
     
     const btn = document.createElement('button');
-    btn.textContent = '删除';
+    btn.textContent = getTranslation('options.sites.custom.delete', currentLanguage);
     Object.assign(btn.style, {
       padding: '4px 8px',
       background: '#ff4444',
@@ -120,7 +156,7 @@ function addCustomUrl(): void {
       domain = new URL(url).hostname;
     }
   } catch (e) {
-    alert('请输入有效的域名');
+    alert(getTranslation('options.domain.invalid', currentLanguage));
     return;
   }
   
@@ -132,7 +168,7 @@ function addCustomUrl(): void {
       renderCustomUrls(newUrls);
       input.value = '';
     } else {
-      alert('该域名已存在');
+      alert(getTranslation('options.domain.exists', currentLanguage));
     }
   });
 }
@@ -200,6 +236,23 @@ document.addEventListener('DOMContentLoaded', () => {
             });
           }
         });
+      });
+    });
+  }
+
+  // 监听语言选择变化
+  const langSelect = document.getElementById('language-select') as HTMLSelectElement;
+  if (langSelect) {
+    langSelect.addEventListener('change', (e) => {
+      const target = e.target as HTMLSelectElement;
+      const newLang = target.value as Language;
+      saveSetting(CONFIG_KEYS.LANGUAGE, newLang);
+      currentLanguage = newLang;
+      applyTranslations(newLang);
+      // 重新渲染 URL 列表以更新删除按钮文本
+      chrome.storage.sync.get([CONFIG_KEYS.CUSTOM_URLS], (result) => {
+        const urls = result[CONFIG_KEYS.CUSTOM_URLS] || [];
+        renderCustomUrls(urls);
       });
     });
   }

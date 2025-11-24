@@ -1,7 +1,7 @@
 {
-  "name": "ai-chat-quick-navigator",
-  "version": "1.0.0",
-  "description": "AI Chat Quick Navigator - Make AI Conversation Navigation Simple and Efficient",
+  "name": "ai-chat-quick-jump",
+  "version": "1.0.1",
+  "description": "AI Chat Quick jump - Make AI Conversation Navigation Simple and Efficient",
   "scripts": {
     "build": "node build.js",
     "dev": "node build.js --watch",

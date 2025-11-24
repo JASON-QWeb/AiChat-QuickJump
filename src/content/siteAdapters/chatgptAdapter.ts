@@ -1,4 +1,4 @@
-import type { SiteAdapter, PromptAnswerPair } from './index';
+import { extractPromptContent, type SiteAdapter, type PromptAnswerPair } from './index';
 
 /**
  * ChatGPT 站点适配器
@@ -42,13 +42,6 @@ export const chatgptAdapter: SiteAdapter = {
     };
     
     /**
-     * 辅助函数：提取文本内容（去除多余空白）
-     */
-    const extractText = (element: HTMLElement): string => {
-      return element.textContent?.trim().replace(/\s+/g, ' ') || '';
-    };
-    
-    /**
      * 辅助函数：检查是否是有效的对话节点
      */
     const isValidNode = (element: HTMLElement): boolean => {
@@ -59,13 +52,17 @@ export const chatgptAdapter: SiteAdapter = {
         return false;
       }
       
-      // 排除太小的元素（例如空 div）
-      const text = extractText(element);
-      if (text.length < 1) {
-        return false;
+      // 只要有文本内容或特殊元素（图片、图表等），就视为有效
+      // 使用 extractPromptContent 的逻辑的简化版来判断存在性
+      const text = element.textContent?.trim() || '';
+      if (text.length > 0) return true;
+      
+      // 检查是否包含多媒体元素
+      if (element.querySelector('img, svg, canvas, pre, code, [data-testid*="file"]')) {
+        return true;
       }
       
-      return true;
+      return false;
     };
 
     // 1. 获取所有带有 author-role 的消息元素
@@ -80,7 +77,7 @@ export const chatgptAdapter: SiteAdapter = {
 
     // 3. 为每个用户问题构建配对
     userMessages.forEach((userMsg, index) => {
-      const promptText = extractText(userMsg);
+      const promptText = extractPromptContent(userMsg);
       
       // 尝试查找对应的 assistant 回答
       // 逻辑：在 allMessages 中找到当前 userMsg 的位置，然后向后找最近的一个 assistant

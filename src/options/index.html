@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AiChat Quick Navigator - 设置</title>
+  <title>Ai Chat Quick jump - 设置</title>
   <style>
     * {
       margin: 0;
@@ -149,31 +149,44 @@
 </head>
 <body>
   <div class="header">
-    <h1>AiChat Quick Navigator</h1>
-    <p class="subtitle">在与AI对话页面中快速导航</p>
+    <h1 data-i18n="options.header.title">Ai Chat Quick jump</h1>
+    <p class="subtitle" data-i18n="options.header.subtitle">在与AI对话页面中快速导航</p>
   </div>
   
   <div class="option-group">
-    <h2>主题设置</h2>
+    <h2 data-i18n="options.settings">设置</h2>
     <div class="option-item">
       <div class="option-label">
-        <span class="title">界面主题</span>
-        <span class="description">选择导航面板的颜色主题</span>
+        <span class="title" data-i18n="options.language">语言 / Language</span>
+        <span class="description" data-i18n="options.language.desc">选择界面语言</span>
+      </div>
+      <select id="language-select" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; font-size: 14px;">
+        <option value="auto">Auto (跟随系统)</option>
+        <option value="zh-CN">简体中文</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+    
+    <!-- 主题设置移动到这里 -->
+    <div class="option-item">
+      <div class="option-label">
+        <span class="title" data-i18n="options.theme.ui">界面主题</span>
+        <span class="description" data-i18n="options.theme.desc">选择导航面板的颜色主题</span>
       </div>
       <select id="ui-theme" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; font-size: 14px;">
-        <option value="auto">跟随系统</option>
-        <option value="light">浅色</option>
-        <option value="dark">深色</option>
-        <option value="blue">天蓝</option>
-        <option value="lavender">薰衣草紫</option>
-        <option value="pink">粉红色</option>
-        <option value="orange">橘黄色</option>
+        <option value="auto" data-i18n="options.theme.auto">跟随系统</option>
+        <option value="light" data-i18n="options.theme.light">浅色</option>
+        <option value="dark" data-i18n="options.theme.dark">深色</option>
+        <option value="blue" data-i18n="options.theme.blue">天蓝</option>
+        <option value="lavender" data-i18n="options.theme.lavender">薰衣草紫</option>
+        <option value="pink" data-i18n="options.theme.pink">粉红色</option>
+        <option value="orange" data-i18n="options.theme.orange">橘黄色</option>
       </select>
     </div>
   </div>
-  
+
   <div class="option-group">
-    <h2>站点支持</h2>
+    <h2 data-i18n="options.sites">站点支持</h2>
     <div class="option-item">
       <div class="option-label">
         <span class="title">ChatGPT</span>
@@ -221,14 +234,14 @@
     <!-- 自定义 URL 部分 -->
     <div class="option-item" style="flex-direction: column; align-items: flex-start; border-bottom: none; padding-top: 20px;">
       <div class="option-label" style="margin-bottom: 15px; width: 100%;">
-        <span class="title">自定义站点（测试中）</span>
-        <span class="description">添加其他 LLM 网站（默认使用 ChatGPT 的适配逻辑）</span>
+        <span class="title" data-i18n="options.sites.custom">自定义站点（测试中）</span>
+        <span class="description" data-i18n="options.sites.custom.desc">添加其他 LLM 网站（默认使用 ChatGPT 的适配逻辑）</span>
       </div>
       
       <div style="display: flex; width: 100%; gap: 10px; margin-bottom: 15px;">
-        <input type="text" id="custom-url-input" placeholder="输入域名，如: chat.example.com" 
+        <input type="text" id="custom-url-input" placeholder="输入域名，如: chat.example.com" data-i18n-placeholder="options.sites.custom.placeholder"
                style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
-        <button id="add-url-btn" style="padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer;">添加</button>
+        <button id="add-url-btn" data-i18n="options.sites.custom.add" style="padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer;">添加</button>
       </div>
       
       <ul id="custom-url-list" style="list-style: none; width: 100%;">
@@ -238,11 +251,11 @@
   </div>
   
   <div class="option-group">
-    <h2>快捷键</h2>
+    <h2 data-i18n="options.shortcuts">快捷键</h2>
     <div class="option-item">
       <div class="option-label">
-        <span class="title">导航快捷键</span>
-        <span class="description">
+        <span class="title" data-i18n="options.shortcuts.nav">导航快捷键</span>
+        <span class="description" data-i18n="options.shortcuts.nav.desc">
           <strong>Mac:</strong> Option (⌥) + W/S (上/下) &nbsp;|&nbsp; 
           <strong>Win/Linux:</strong> Alt + W/S (上/下)
         </span>
@@ -250,8 +263,8 @@
     </div>
     <div class="option-item" style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 10px;">
       <div class="option-label">
-        <span class="title">标记当前对话</span>
-        <span class="description">
+        <span class="title" data-i18n="options.shortcuts.mark">标记当前对话</span>
+        <span class="description" data-i18n="options.shortcuts.mark.desc">
           <strong>Mac:</strong> Option (⌥) + A &nbsp;|&nbsp; 
           <strong>Win/Linux:</strong> Alt + A
         </span>
@@ -259,27 +272,27 @@
     </div>
     <div class="option-item" style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 10px;">
       <div class="option-label">
-        <span class="title">显示/隐藏面板</span>
-        <span class="description">
+        <span class="title" data-i18n="options.shortcuts.toggle">显示/隐藏面板</span>
+        <span class="description" data-i18n="options.shortcuts.toggle.desc">
           <strong>Mac:</strong> Option (⌥) + D &nbsp;|&nbsp; 
           <strong>Win/Linux:</strong> Alt + D
         </span>
       </div>
     </div>
     <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 13px;">
-      💡 想要自定义快捷键？访问 
-      <a href="chrome://extensions/shortcuts/" target="_blank" style="color: #4CAF50; text-decoration: none;">
-        chrome://extensions/shortcuts/
+      <span data-i18n="options.shortcuts.custom.hint">💡 想要自定义快捷键？访问 </span>
+      <a href="#" id="shortcuts-link" style="color: #4CAF50; text-decoration: none;">
+        chrome://extensions/shortcuts
       </a>
     </div>
   </div>
   
-  <div class="save-status" id="save-status">
+  <div class="save-status" id="save-status" data-i18n="options.save.success">
     ✓ 设置已保存
   </div>
   
   <div class="footer">
-    <p>Version 1.0.0 | AiChat Quick Navigator</p>
+    <p>Version 1.0.1 | Ai Chat Quick jump</p>
   </div>
   
   <script src="index.js" type="module"></script>

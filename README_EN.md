@@ -1,4 +1,4 @@
-<h1 align="center">AI Chat Quick Navigator</h1>
+<h1 align="center">AI Chat Quick jump</h1>
 
 <p align="center">
   <strong>Make AI Conversation Navigation Simple and Efficient</strong>
@@ -23,9 +23,9 @@
 
 ### 👍 Official Website： To know everything
 
-- URL
+- [www.aichatjump.click](http://www.aichatjump.click)
 
-## ❌ Without AI Chat Quick Navigator
+## ❌ Without AI Chat Quick jump
 
 When using AI chat tools like ChatGPT, Claude, Gemini, or DeepSeek:
 
@@ -33,11 +33,11 @@ When using AI chat tools like ChatGPT, Claude, Gemini, or DeepSeek:
 - 🔍 **Can't find key points** - important conversations buried in lengthy chat history
 - ⏱️ **Time wasted** - repeatedly scrolling up and down through long conversations
 
-**AI Chat Prompt Navigator** was created to solve these problems! It's a browser extension that lets you **quickly jump, mark highlights, and instantly locate** any question and answer in AI conversation pages.
+**AI Chat Prompt jump** was created to solve these problems! It's a browser extension that lets you **quickly jump, mark highlights, and instantly locate** any question and answer in AI conversation pages.
 
-## ✅ What AI Chat Quick Navigator can do
+## ✅ What AI Chat Quick jump can do
 
-### 🎯 **Conversation History Navigator**
+### 🎯 **Conversation History jump**
 - Shows a slim navigation bar on the right; each dot represents **one of your previous prompts in this conversation**
 - **Hover preview** of prompt content (shows first 80 characters)
 - **Click any dot** to instantly jump to that request and its answer, with highlighting

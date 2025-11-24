@@ -1,11 +1,11 @@
 // Content Script
 import { getActiveAdapter } from './siteAdapters/index';
 import { AnswerIndexManager } from './navigation/answerIndexManager';
-import { RightSideTimelineNavigator } from './navigation/rightSideTimelineNavigator';
+import { RightSideTimelinejump } from './navigation/rightSideTimelineNavigator';
 import { scrollToAndHighlight } from './navigation/scrollAndHighlight';
 
 let indexManager: AnswerIndexManager | null = null;
-let timelineNavigator: RightSideTimelineNavigator | null = null;
+let timelinejump: RightSideTimelinejump | null = null;
 let isInitializing = false; // 防止重复初始化
 let initPromise: Promise<void> | null = null; // 存储当前初始化Promise
 let isListLocked = false; // 标记列表是否已锁定（固定总数）
@@ -39,8 +39,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
     }
     
     // Real-time theme update
-    if (changes.ui_theme && timelineNavigator) {
-      timelineNavigator.setTheme(changes.ui_theme.newValue || 'auto');
+    if (changes.ui_theme && timelinejump) {
+      timelinejump.setTheme(changes.ui_theme.newValue || 'auto');
     }
   }
 });
@@ -157,8 +157,8 @@ function navigateToNext(): void {
  */
 function updateUI(): void {
   // 同步更新时间线 active 状态
-  if (timelineNavigator && indexManager) {
-    timelineNavigator.updateActiveIndex(indexManager.getCurrentIndex());
+  if (timelinejump && indexManager) {
+    timelinejump.updateActiveIndex(indexManager.getCurrentIndex());
   }
 }
 
@@ -166,12 +166,12 @@ function updateUI(): void {
  * 处理窗口 resize 事件
  */
 const handleResize = debounce(() => {
-  if (indexManager && timelineNavigator) {
+  if (indexManager && timelinejump) {
     // 重新计算相对位置
     indexManager.refresh();
     
     // 刷新时间线节点位置
-    timelineNavigator.refreshPositions();
+    timelinejump.refreshPositions();
   }
 }, 300);
 
@@ -195,9 +195,9 @@ function clearUI(): void {
   // 增加版本号，使所有正在进行的（旧）init 流程失效
   currentInitId++;
 
-  if (timelineNavigator) {
-    timelineNavigator.destroy();
-    timelineNavigator = null;
+  if (timelinejump) {
+    timelinejump.destroy();
+    timelinejump = null;
   }
 
   // 断开 MutationObserver，防止重复监听
@@ -249,15 +249,15 @@ import type { ThemeMode } from './navigation/themes';
 /**
  * 初始化时间线导航器
  */
-function initTimelineNavigator(): void {
+function initTimelinejump(): void {
   if (!indexManager) return;
   
   // 如果不存在实例，则创建
-  if (!timelineNavigator) {
-  timelineNavigator = new RightSideTimelineNavigator();
+  if (!timelinejump) {
+  timelinejump = new RightSideTimelinejump();
     
     // 注册节点点击事件 (只需注册一次)
-    timelineNavigator.onNodeClick((itemIndex: number) => {
+    timelinejump.onNodeClick((itemIndex: number) => {
       // 复用 navigateToAnswer 函数，统一管理锁逻辑
       navigateToAnswer(itemIndex);
     });
@@ -265,16 +265,16 @@ function initTimelineNavigator(): void {
   
   // 1. 更新/设置对话 ID
   const conversationId = getConversationId();
-  timelineNavigator.setConversationId(conversationId);
+  timelinejump.setConversationId(conversationId);
 
   // 2. 更新/设置主题
   const theme = (cachedSettings?.ui_theme as ThemeMode) || 'auto';
-    timelineNavigator.setTheme(theme);
+    timelinejump.setTheme(theme);
   
   // 3. 传入所有 Prompt-Answer 条目 (init 方法内部会处理增量更新)
   const items = indexManager.getItems();
-  timelineNavigator.init(items);
-  timelineNavigator.updateActiveIndex(indexManager.getCurrentIndex());
+  timelinejump.init(items);
+  timelinejump.updateActiveIndex(indexManager.getCurrentIndex());
 }
 
 /**
@@ -386,7 +386,7 @@ async function init() {
   
   // ========== 初始化右侧时间线导航器 (仅当找到节点时) ==========
   if (totalCount > 0) {
-    initTimelineNavigator();
+    initTimelinejump();
   }
   // ========== 时间线初始化逻辑调整结束 ==========
   
@@ -422,8 +422,8 @@ async function init() {
         
         // 如果数量增加了，说明有新对话
         if (newCount > oldCount) {
-          // 重新初始化时间线（RightSideTimelineNavigator 会处理节点重绘和布局）
-          initTimelineNavigator();
+          // 重新初始化时间线（RightSideTimelinejump 会处理节点重绘和布局）
+          initTimelinejump();
           
           // 自动滚动到底部（通常新消息在最下面）
           // 并选中最后一个节点
@@ -446,7 +446,7 @@ async function init() {
           indexManager.updateCurrentIndexByScroll(window.scrollY);
           
           // ============ 延迟初始化的时间线 ============
-          initTimelineNavigator();
+          initTimelinejump();
           // ========================================
           
           updateUI();
@@ -536,20 +536,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     navigateToNext();
     sendResponse({ success: true });
   } else if (message.type === 'LLM_NAV_TOGGLE_UI') {
-    if (timelineNavigator) {
-      timelineNavigator.toggle();
+    if (timelinejump) {
+      timelinejump.toggle();
       sendResponse({ success: true });
     } else {
       sendResponse({ success: false, error: 'Timeline not initialized' });
     }
   } else if (message.type === 'LLM_NAV_UPDATE_THEME') {
-    if (timelineNavigator) {
-      timelineNavigator.setTheme(message.theme);
+    if (timelinejump) {
+      timelinejump.setTheme(message.theme);
     }
     sendResponse({ success: true });
   } else if (message.type === 'LLM_NAV_TOGGLE_PIN') {
-    if (timelineNavigator) {
-      timelineNavigator.togglePinnedCurrent();
+    if (timelinejump) {
+      timelinejump.togglePinnedCurrent();
     }
     sendResponse({ success: true });
   }

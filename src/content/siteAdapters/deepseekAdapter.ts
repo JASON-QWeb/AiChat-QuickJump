@@ -1,4 +1,4 @@
-import type { SiteAdapter, PromptAnswerPair } from './index';
+import { extractPromptContent, type SiteAdapter, type PromptAnswerPair } from './index';
 
 export const deepseekAdapter: SiteAdapter = {
   name: 'DeepSeek',
@@ -48,7 +48,7 @@ export const deepseekAdapter: SiteAdapter = {
       pairs.push({
         id: `deepseek-turn-${index}`,
         promptNode: element,
-        promptText: element.textContent?.trim() || '',
+        promptText: extractPromptContent(element),
         answerNode: element,
         topOffset
       });

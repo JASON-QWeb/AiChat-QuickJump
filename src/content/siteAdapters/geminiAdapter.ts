@@ -1,4 +1,4 @@
-import type { SiteAdapter, PromptAnswerPair } from './index';
+import { extractPromptContent, type SiteAdapter, type PromptAnswerPair } from './index';
 
 export const geminiAdapter: SiteAdapter = {
   name: 'Gemini',
@@ -28,7 +28,7 @@ export const geminiAdapter: SiteAdapter = {
       pairs.push({
         id: `gemini-turn-${index}`,
         promptNode: element,
-        promptText: element.textContent?.trim() || '',
+        promptText: extractPromptContent(element),
         answerNode: element,
         topOffset
       });

@@ -1,4 +1,4 @@
-import type { SiteAdapter, PromptAnswerPair } from './index';
+import { extractPromptContent, type SiteAdapter, type PromptAnswerPair } from './index';
 
 export const claudeAdapter: SiteAdapter = {
   name: 'Claude',
@@ -18,9 +18,12 @@ export const claudeAdapter: SiteAdapter = {
       'div.group.grid.grid-cols-1' // 某些版本的容器
     ].join(','))).filter(el => {
       // 过滤掉非用户消息（如果使用了通用选择器）
-      // Claude 的用户消息通常有特定的背景色或图标，或者 textContent 内容
-      // 这里做一个简单的文本长度检查
-      return el.textContent && el.textContent.trim().length > 0;
+      // 使用 extractPromptContent 的逻辑判断是否包含有效内容
+      const element = el as HTMLElement;
+      const text = element.textContent?.trim() || '';
+      if (text.length > 0) return true;
+      if (element.querySelector('img, svg, canvas, pre, code, [data-testid*="file"]')) return true;
+      return false;
     });
 
     // 如果上述特定选择器找不到，尝试通用策略：查找包含 "User" 或头像的容器
@@ -39,7 +42,7 @@ export const claudeAdapter: SiteAdapter = {
       pairs.push({
         id: `claude-turn-${index}`,
         promptNode: element,
-        promptText: element.textContent?.trim() || '',
+        promptText: extractPromptContent(element),
         answerNode: element, // 暂时指向自己，跳转逻辑主要依赖 promptNode
         topOffset
       });

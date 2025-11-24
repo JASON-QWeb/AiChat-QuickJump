@@ -65,6 +65,7 @@ import { chatgptAdapter } from './chatgptAdapter';
 import { claudeAdapter } from './claudeAdapter';
 import { geminiAdapter } from './geminiAdapter';
 import { deepseekAdapter } from './deepseekAdapter';
+import { customSiteAdapter } from './customSiteAdapter';
 
 /**
  * 所有已注册的适配器列表
@@ -92,17 +93,14 @@ export function getActiveAdapter(location: Location, customUrls: string[] = []):
   }
   
   // 2. 检查自定义 URL
-  // 如果匹配到自定义 URL，使用 ChatGPT 适配器（默认复用逻辑）
   if (customUrls.length > 0) {
     const hostname = location.hostname;
     if (customUrls.some(url => hostname === url || hostname.endsWith('.' + url))) {
-      // 创建一个新的适配器实例，或者直接复用 ChatGPT 适配器
-      // 这里我们通过 Object.create 复用，但修改 name
-      const customAdapter = Object.create(chatgptAdapter);
-      customAdapter.name = 'Custom Site (ChatGPT Compatible)';
-      // 覆盖 isSupported 确保它总是返回 true (因为外层已经匹配了)
-      customAdapter.isSupported = () => true;
-      return customAdapter;
+      // 使用通用适配器
+      // 我们可以克隆一个实例并覆盖其 isSupported 方法（虽然在这里不是必须的，因为已经匹配了）
+      const adapter = Object.create(customSiteAdapter);
+      adapter.isSupported = () => true;
+      return adapter;
     }
   }
   
@@ -114,5 +112,42 @@ export function getActiveAdapter(location: Location, customUrls: string[] = []):
  */
 export function getAllAdapters(): SiteAdapter[] {
   return [...adapters];
+}
+
+/**
+ * 从 Prompt 节点中提取预览文本
+ * 支持纯文本、图片、代码、图表等内容的识别
+ */
+export function extractPromptContent(element: HTMLElement): string {
+  // 1. 尝试获取纯文本
+  const text = element.textContent?.trim().replace(/\s+/g, ' ') || '';
+  if (text.length > 0) {
+    return text;
+  }
+
+  // 2. 检查是否有图片
+  if (element.querySelector('img')) {
+    return '[图片] Image';
+  }
+
+  // 3. 检查是否有 SVG/Canvas (图表)
+  if (element.querySelector('svg') || element.querySelector('canvas')) {
+    return '[图表] Chart';
+  }
+
+  // 4. 检查是否有代码块 (通常有 pre 或 code)
+  if (element.querySelector('pre') || element.querySelector('code')) {
+    return '[代码] Code';
+  }
+  
+  // 5. 检查是否有文件图标或特定的文件容器 (通用推测)
+  // 许多 UI 库使用 specific class 或 testid
+  if (element.querySelector('[data-testid*="file"]') || 
+      element.querySelector('[class*="file"]') || 
+      element.querySelector('[aria-label*="File"]')) {
+      return '[文件] File';
+  }
+
+  return '[对话] Conversation';
 }
 

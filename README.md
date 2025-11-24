@@ -1,4 +1,4 @@
-<h1 align="center">AI Chat Quick Navigator</h1>
+<h1 align="center">AI Chat Quick jump</h1>
 
 <p align="center">
   <strong>让 AI 对话导航变得简单高效</strong>
@@ -23,9 +23,9 @@
 
 ### 👍 官方Website 快速了解一切
 
-- 代插入URL
+- [www.aichatjump.click](http://www.aichatjump.click)
 
-### ❌ 不使用 AI Chat Quick Navigator
+### ❌ 不使用 AI Chat Quick jump
 
 在使用 ChatGPT、Claude、Gemini、Deepseek 等 AI 聊天工具时：
 
@@ -33,9 +33,9 @@
 - 🔍 **找不到重点**，重要的对话内容淹没在长长的聊天记录中
 - ⏱️ **浪费时间**，在冗长的对话中反复上下翻找
 
-**AI Chat Prompt Navigator** 就是为了解决这些问题而生！这是一款浏览器扩展，让您可以在 AI 对话页面中**快速跳转、标记重点、一键定位**任何一条提问和回答。
+**AI Chat Prompt jump** 就是为了解决这些问题而生！这是一款浏览器扩展，让您可以在 AI 对话页面中**快速跳转、标记重点、一键定位**任何一条提问和回答。
 
-### ✅ AI Chat Quick Navigator 核心功能
+### ✅ AI Chat Quick jump 核心功能
 
 #### 🎯 **右侧历史对话导航条**
 - 页面右侧会出现一列小圆点，每一个都代表你在当前对话里发过的一次提问
