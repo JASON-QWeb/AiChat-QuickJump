@@ -190,6 +190,7 @@ export const FavoriteStore = {
 
   /**
    * 删除收藏中的单个节点
+   * 删除所有子项后父项依然保留，用户可以点击父项跳转到对话
    */
   async removeItem(conversationId: string, nodeIndex: number): Promise<boolean> {
     const all = await this.loadAll();
@@ -199,11 +200,6 @@ export const FavoriteStore = {
     
     conversation.items = conversation.items.filter(item => item.nodeIndex !== nodeIndex);
     conversation.updatedAt = Date.now();
-    
-    // 如果没有收藏项了，删除整个对话收藏
-    if (conversation.items.length === 0) {
-      return this.unfavoriteConversation(conversationId);
-    }
     
     await this.saveAll(all);
     return true;

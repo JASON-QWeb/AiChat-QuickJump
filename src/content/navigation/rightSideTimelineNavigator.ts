@@ -682,7 +682,8 @@ export class RightSideTimelinejump {
     });
     deleteBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (confirm('确定要删除这个收藏吗？')) {
+      const confirmed = await this.showConfirmDialog('确定要删除这个收藏吗？');
+      if (confirmed) {
         await FavoriteStore.unfavoriteConversation(conv.conversationId);
         item.remove();
         // 如果删除的是当前对话，更新星星状态
@@ -781,16 +782,11 @@ export class RightSideTimelinejump {
       });
       subDeleteBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        await FavoriteStore.removeItem(conv.conversationId, subItem.nodeIndex);
-        subItemEl.remove();
-        // 检查是否还有子项，如果没有了则移除整个父项
-        if (subItems.children.length === 0) {
-          item.remove();
-          // 如果删除的是当前对话，更新星星状态
-          if (this.conversationId === conv.conversationId) {
-            this.isFavorited = false;
-            this.updateTopStarStyle();
-          }
+        const confirmed = await this.showConfirmDialog('确定要删除这个子项吗？');
+        if (confirmed) {
+          await FavoriteStore.removeItem(conv.conversationId, subItem.nodeIndex);
+          subItemEl.remove();
+          // 删除所有子项后父项依然保留，用户可以点击父项跳转到对话
         }
       });
       
@@ -870,6 +866,123 @@ export class RightSideTimelinejump {
     if (overlay) {
       overlay.remove();
     }
+  }
+
+  /**
+   * 显示自定义确认对话框
+   */
+  private showConfirmDialog(message: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const theme = this.currentTheme;
+      
+      // 创建遮罩层
+      const overlay = document.createElement('div');
+      Object.assign(overlay.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        right: '0',
+        bottom: '0',
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        zIndex: '2147483648',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      });
+      
+      // 创建对话框
+      const dialog = document.createElement('div');
+      Object.assign(dialog.style, {
+        backgroundColor: theme.tooltipBackgroundColor,
+        color: theme.tooltipTextColor,
+        borderRadius: '10px',
+        padding: '20px 24px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+        maxWidth: '320px',
+        textAlign: 'center'
+      });
+      
+      // 消息文本
+      const msgEl = document.createElement('p');
+      msgEl.textContent = message;
+      Object.assign(msgEl.style, {
+        margin: '0 0 20px 0',
+        fontSize: '14px',
+        lineHeight: '1.5'
+      });
+      
+      // 按钮容器
+      const btnContainer = document.createElement('div');
+      Object.assign(btnContainer.style, {
+        display: 'flex',
+        gap: '12px',
+        justifyContent: 'center'
+      });
+      
+      // 取消按钮
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = '取消';
+      Object.assign(cancelBtn.style, {
+        padding: '8px 20px',
+        border: `1px solid ${theme.timelineBarColor}`,
+        borderRadius: '6px',
+        backgroundColor: 'transparent',
+        color: theme.tooltipTextColor,
+        cursor: 'pointer',
+        fontSize: '13px',
+        transition: 'all 0.2s'
+      });
+      cancelBtn.addEventListener('mouseenter', () => {
+        cancelBtn.style.backgroundColor = theme.name === '暗色' 
+          ? 'rgba(255,255,255,0.1)' 
+          : 'rgba(0,0,0,0.05)';
+      });
+      cancelBtn.addEventListener('mouseleave', () => {
+        cancelBtn.style.backgroundColor = 'transparent';
+      });
+      
+      // 确认按钮
+      const confirmBtn = document.createElement('button');
+      confirmBtn.textContent = '确定';
+      Object.assign(confirmBtn.style, {
+        padding: '8px 20px',
+        border: 'none',
+        borderRadius: '6px',
+        backgroundColor: '#e53935',
+        color: '#fff',
+        cursor: 'pointer',
+        fontSize: '13px',
+        transition: 'all 0.2s'
+      });
+      confirmBtn.addEventListener('mouseenter', () => {
+        confirmBtn.style.backgroundColor = '#c62828';
+      });
+      confirmBtn.addEventListener('mouseleave', () => {
+        confirmBtn.style.backgroundColor = '#e53935';
+      });
+      
+      // 关闭对话框
+      const closeDialog = (result: boolean) => {
+        overlay.remove();
+        resolve(result);
+      };
+      
+      cancelBtn.addEventListener('click', () => closeDialog(false));
+      confirmBtn.addEventListener('click', () => closeDialog(true));
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeDialog(false);
+      });
+      
+      btnContainer.appendChild(cancelBtn);
+      btnContainer.appendChild(confirmBtn);
+      dialog.appendChild(msgEl);
+      dialog.appendChild(btnContainer);
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+      
+      // 聚焦确认按钮
+      confirmBtn.focus();
+    });
   }
 
   /**
