@@ -447,9 +447,6 @@ async function init() {
   // ========== 初始化右侧时间线导航器 (仅当找到节点时) ==========
   if (totalCount > 0) {
     initTimelinejump();
-    
-    // 检查 URL 参数，处理从收藏跳转过来的情况
-    checkAndNavigateToFavoriteIndex();
   }
   // ========== 时间线初始化逻辑调整结束 ==========
   
@@ -585,9 +582,15 @@ document.addEventListener('click', () => {
 
 // 页面加载完成后初始化
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', () => {
+    init();
+    // 独立检测收藏跳转参数（不依赖 init 的结果）
+    checkAndNavigateToFavoriteIndex();
+  });
 } else {
   init();
+  // 独立检测收藏跳转参数（不依赖 init 的结果）
+  checkAndNavigateToFavoriteIndex();
 }
 
 // 监听来自 background 和 options 的消息
