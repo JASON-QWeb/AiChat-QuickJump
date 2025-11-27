@@ -8,6 +8,11 @@ export const chatgptAdapter: SiteAdapter = {
   
   /**
    * 判断是否是 ChatGPT 对话页面
+   * 
+   * 支持的 URL 格式：
+   * - 根路径: https://chatgpt.com/
+   * - 普通对话: https://chatgpt.com/c/{conversation_id}
+   * - Project 对话: https://chatgpt.com/g/g-p-{project_id}/c/{conversation_id}
    */
   isSupported(location: Location): boolean {
     const { hostname, pathname } = location;
@@ -15,8 +20,13 @@ export const chatgptAdapter: SiteAdapter = {
     // 检测是否是 ChatGPT 域名
     const isChatGPT = hostname === 'chatgpt.com' || hostname === 'chat.openai.com';
     
-    // 检测是否是对话页面（路径包含 /c/ 或者是根路径）
-    const isConversationPage = pathname === '/' || pathname.startsWith('/c/');
+    // 检测是否是对话页面
+    // 1. 根路径: /
+    // 2. 普通对话: /c/
+    // 3. Project 对话: /g/g-p-.../c/
+    const isConversationPage = pathname === '/' || 
+                               pathname.startsWith('/c/') ||
+                               (pathname.startsWith('/g/') && pathname.includes('/c/'));
     
     return isChatGPT && isConversationPage;
   },
