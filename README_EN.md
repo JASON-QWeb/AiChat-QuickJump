@@ -27,7 +27,7 @@
 
 ### ❌ Without AI Chat Quick jump
 
-When using AI chat tools like ChatGPT, Claude, Gemini, DeepSeek, Grok and others:
+When chat with AI:
 
 - 💬 **Conversations are too long** – you want to review a previous question but must scroll endlessly
 - 🔍 **Key content is hard to find** – important messages are buried in a massive chat history
@@ -47,9 +47,9 @@ When using AI chat tools like ChatGPT, Claude, Gemini, DeepSeek, Grok and others
 #### 📌 Smart pin & favorites
 
 - **Long-press a dot for 0.5 seconds** to pin important messages; pinned items are automatically added to your favorites list
-- 📁 **Bottom “★★★” button** opens the favorites panel: browse all your saved conversations and jump back to the original messages
-- ✏️ **Editable favorite title**: make your saved items easier to recognize and manage
-- 🔄 **Cross-site favorites sync**: share the same favorites list across ChatGPT, Grok and other supported AI platforms
+- **Bottom “★★★” button** opens the favorites panel: browse all your saved conversations and jump back to the original messages
+- **Editable favorite title**: make your saved items easier to recognize and manage
+- **Cross-site favorites sync**: share the same favorites list across ChatGPT, Grok and other supported AI platforms
 
 #### ⌨️ Powerful keyboard shortcuts
 
