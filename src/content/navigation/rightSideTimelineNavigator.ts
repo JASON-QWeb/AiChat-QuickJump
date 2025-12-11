@@ -3,6 +3,11 @@ import { PinnedStore } from '../store/pinnedStore';
 import { FavoriteStore, type FavoriteConversation } from '../store/favoriteStore';
 import { themes, resolveTheme, type ThemeMode, type TimelineTheme } from './themes';
 import { getTranslation, getSystemLanguage, type Language } from '../../utils/i18n';
+import { 
+  ChristmasThemeEffects, 
+  SciFiThemeEffects, 
+  injectThemeAnimationStyles 
+} from './themeEffects';
 
 /**
  * 右侧时间线导航器
@@ -49,15 +54,24 @@ export class RightSideTimelinejump {
   
   // 当前主题
   private currentTheme: TimelineTheme = themes.light;
+  private currentThemeMode: ThemeMode = 'auto';
+  
+  // 特殊主题效果管理器
+  private christmasEffects: ChristmasThemeEffects | null = null;
+  private scifiEffects: SciFiThemeEffects | null = null;
   
   // 防止 ResizeObserver 无限循环的标志
   private isUpdatingPositions: boolean = false;
 
   constructor() {
+    // 注入主题动画样式
+    injectThemeAnimationStyles();
+    
     // 确保主题已初始化
     const savedTheme = localStorage.getItem('llm_nav_theme_cache');
     if (savedTheme && themes[savedTheme]) {
        this.currentTheme = themes[savedTheme];
+       this.currentThemeMode = savedTheme as ThemeMode;
     }
 
     this.container = this.createContainer();
@@ -100,11 +114,24 @@ export class RightSideTimelinejump {
   setTheme(mode: ThemeMode) {
     const themeType = resolveTheme(mode);
     this.currentTheme = themes[themeType];
+    this.currentThemeMode = mode;
     // 缓存主题，防止构造函数加载时闪烁
     localStorage.setItem('llm_nav_theme_cache', themeType);
     
-    // 更新时间线主干颜色
-    this.timelineBar.style.backgroundColor = this.currentTheme.timelineBarColor;
+    // 清理之前的特殊主题效果
+    this.cleanupThemeEffects();
+    
+    // 根据主题类型应用不同的效果
+    const themeTypeFlag = this.currentTheme.themeType;
+    
+    if (themeTypeFlag === 'christmas') {
+      this.applyChristmasTheme();
+    } else if (themeTypeFlag === 'scifi') {
+      this.applySciFiTheme();
+    } else {
+      // 普通主题
+      this.applyNormalTheme();
+    }
 
     if (this.slider) {
       this.slider.style.borderColor = this.currentTheme.timelineBarColor;
@@ -115,8 +142,7 @@ export class RightSideTimelinejump {
     }
 
     // 更新 Tooltip 样式
-    this.tooltip.style.backgroundColor = this.currentTheme.tooltipBackgroundColor;
-    this.tooltip.style.color = this.currentTheme.tooltipTextColor;
+    this.updateTooltipTheme();
 
     // 刷新所有节点样式
     this.nodes.forEach((node, index) => {
@@ -126,6 +152,113 @@ export class RightSideTimelinejump {
     // 更新星星按钮样式
     this.updateTopStarStyle();
     this.updateBottomStarsStyle();
+  }
+  
+  /**
+   * 清理之前的特殊主题效果
+   */
+  private cleanupThemeEffects(): void {
+    if (this.christmasEffects) {
+      this.christmasEffects.destroy();
+      this.christmasEffects = null;
+    }
+    if (this.scifiEffects) {
+      this.scifiEffects.destroy();
+      this.scifiEffects = null;
+    }
+    
+    // 移除主题相关的类名
+    this.tooltip.classList.remove('christmas-tooltip', 'scifi-tooltip');
+  }
+  
+  /**
+   * 应用圣诞主题
+   */
+  private applyChristmasTheme(): void {
+    // 初始化圣诞特效
+    this.christmasEffects = new ChristmasThemeEffects(this.container);
+    this.christmasEffects.init();
+    
+    // 应用灯条树干样式
+    const barStyle = ChristmasThemeEffects.getTimelineBarStyle();
+    this.timelineBar.style.cssText = `
+      position: absolute;
+      left: 50%;
+      top: 0;
+      height: 100%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      transition: background-color 0.3s ease;
+      ${barStyle}
+    `;
+    
+    // Tooltip 添加圣诞类名
+    this.tooltip.classList.add('christmas-tooltip');
+  }
+  
+  /**
+   * 应用科幻主题
+   */
+  private applySciFiTheme(): void {
+    // 初始化科幻特效
+    this.scifiEffects = new SciFiThemeEffects(this.container);
+    this.scifiEffects.init();
+    
+    // 应用流体树干样式
+    const barStyle = SciFiThemeEffects.getTimelineBarStyle();
+    this.timelineBar.style.cssText = `
+      position: absolute;
+      left: 50%;
+      top: 0;
+      height: 100%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      transition: background-color 0.3s ease;
+      ${barStyle}
+    `;
+    
+    // Tooltip 添加科幻类名
+    this.tooltip.classList.add('scifi-tooltip');
+  }
+  
+  /**
+   * 应用普通主题
+   */
+  private applyNormalTheme(): void {
+    // 重置时间线主干为普通样式
+    this.timelineBar.style.cssText = '';
+    Object.assign(this.timelineBar.style, {
+      position: 'absolute',
+      left: '50%',
+      top: '0',
+      width: '2px',
+      height: '100%',
+      backgroundColor: this.currentTheme.timelineBarColor,
+      transform: 'translateX(-50%)',
+      pointerEvents: 'none',
+      transition: 'background-color 0.3s ease'
+    });
+  }
+  
+  /**
+   * 更新 Tooltip 主题样式
+   */
+  private updateTooltipTheme(): void {
+    const themeTypeFlag = this.currentTheme.themeType;
+    
+    if (themeTypeFlag === 'christmas') {
+      this.tooltip.style.backgroundColor = '#FFFAF0';
+      this.tooltip.style.color = '#8B4513';
+      this.tooltip.style.border = '1px solid #DAA520';
+    } else if (themeTypeFlag === 'scifi') {
+      this.tooltip.style.backgroundColor = 'rgba(20, 10, 40, 0.95)';
+      this.tooltip.style.color = '#00FFFF';
+      this.tooltip.style.border = '1px solid #00FFFF';
+    } else {
+      this.tooltip.style.backgroundColor = this.currentTheme.tooltipBackgroundColor;
+      this.tooltip.style.color = this.currentTheme.tooltipTextColor;
+      this.tooltip.style.border = 'none';
+    }
   }
 
   /**
@@ -309,7 +442,41 @@ export class RightSideTimelinejump {
    */
   private updateBottomStarsStyle(): void {
     if (!this.bottomStarsButton) return;
-    this.bottomStarsButton.style.color = this.currentTheme.pinnedColor;
+    
+    const themeTypeFlag = this.currentTheme.themeType;
+    
+    // 首先彻底清除所有内容，防止重复元素
+    while (this.bottomStarsButton.firstChild) {
+      this.bottomStarsButton.removeChild(this.bottomStarsButton.firstChild);
+    }
+    this.bottomStarsButton.innerHTML = '';
+    
+    if (themeTypeFlag === 'christmas') {
+      // 圣诞主题：礼物图片
+      this.bottomStarsButton.innerHTML = ChristmasThemeEffects.createBottomGifts();
+      this.bottomStarsButton.style.color = '';
+      this.bottomStarsButton.style.width = '40px';
+      this.bottomStarsButton.style.height = '32px';
+    } else if (themeTypeFlag === 'scifi') {
+      // 科幻主题：Love Death Robots 动画（5s周期）
+      const ldrElement = SciFiThemeEffects.createLDRBottom();
+      this.bottomStarsButton.appendChild(ldrElement);
+      this.bottomStarsButton.style.color = '';
+      this.bottomStarsButton.style.width = '65px';
+      this.bottomStarsButton.style.height = '40px';
+    } else {
+      // 普通主题：三星
+      this.bottomStarsButton.innerHTML = `
+        <span style="position: relative;">
+          <span style="position: absolute; left: -6px; top: 0; opacity: 0.7;">★</span>
+          <span style="position: relative; z-index: 1;">★</span>
+          <span style="position: absolute; left: 6px; top: 0; opacity: 0.7;">★</span>
+        </span>
+      `;
+      this.bottomStarsButton.style.color = this.currentTheme.pinnedColor;
+      this.bottomStarsButton.style.width = '36px';
+      this.bottomStarsButton.style.height = '28px';
+    }
   }
 
   /**
@@ -453,17 +620,32 @@ export class RightSideTimelinejump {
   private updateTopStarStyle(): void {
     if (!this.topStarButton) return;
     
-    if (this.isFavorited) {
-      this.topStarButton.innerHTML = '★'; // 实心星星
-      this.topStarButton.style.color = this.currentTheme.pinnedColor;
+    const themeTypeFlag = this.currentTheme.themeType;
+    
+    if (themeTypeFlag === 'christmas') {
+      // 圣诞主题：梦幻模糊星星，根据收藏状态显示不同亮度
+      this.topStarButton.innerHTML = ChristmasThemeEffects.createTopStar(this.isFavorited);
       this.topStarButton.style.opacity = '1';
-      this.topStarButton.title = this.t('favorites.remove');
+      this.topStarButton.style.color = '';
+    } else if (themeTypeFlag === 'scifi') {
+      // 科幻主题：红色骷髅头
+      this.topStarButton.innerHTML = SciFiThemeEffects.createTopSkull(this.isFavorited);
+      this.topStarButton.style.opacity = '1';
+      this.topStarButton.style.color = '';
     } else {
-      this.topStarButton.innerHTML = '☆'; // 空心星星
-      this.topStarButton.style.color = this.currentTheme.defaultNodeColor;
-      this.topStarButton.style.opacity = '0.5';
-      this.topStarButton.title = this.t('favorites.add');
+      // 普通主题：星星
+      if (this.isFavorited) {
+        this.topStarButton.innerHTML = '★'; // 实心星星
+        this.topStarButton.style.color = this.currentTheme.pinnedColor;
+        this.topStarButton.style.opacity = '1';
+      } else {
+        this.topStarButton.innerHTML = '☆'; // 空心星星
+        this.topStarButton.style.color = this.currentTheme.defaultNodeColor;
+        this.topStarButton.style.opacity = '0.5';
+      }
     }
+    
+    this.topStarButton.title = this.isFavorited ? this.t('favorites.remove') : this.t('favorites.add');
   }
 
   /**
@@ -1279,20 +1461,167 @@ export class RightSideTimelinejump {
   private updateNodeStyle(node: HTMLElement, index: number) {
     const isActive = index === this.activeIndex;
     const isPinned = this.pinnedNodes.has(String(index));
+    const themeTypeFlag = this.currentTheme.themeType;
+    
+    // 首先彻底清理节点的所有特殊样式和元素
+    this.cleanNodeStyles(node);
     
     // 基础样式
     node.style.transition = 'all 0.2s ease';
+    
+    // 根据主题类型应用不同的节点样式
+    if (themeTypeFlag === 'christmas') {
+      this.applyChristmasNodeStyle(node, isActive, isPinned);
+    } else if (themeTypeFlag === 'scifi') {
+      this.applySciFiNodeStyle(node, isActive, isPinned);
+    } else {
+      this.applyNormalNodeStyle(node, isActive, isPinned);
+    }
+  }
+  
+  /**
+   * 清理节点的特殊主题样式和子元素（保留核心位置属性）
+   */
+  private cleanNodeStyles(node: HTMLElement): void {
+    // 保留节点的 top 位置
+    const savedTop = node.style.top;
+    
+    // 移除所有特殊主题的子元素
+    node.querySelectorAll('.scifi-outer-ring, .scifi-inner-ring, .scifi-center, .scifi-ring, .scifi-crosshair').forEach(el => el.remove());
+    
+    // 移除所有主题相关的类名
+    node.classList.remove(
+      'christmas-node-sphere', 'christmas-node-default', 'christmas-node-active', 'christmas-node-pinned', 'christmas-node-pinned-active',
+      'scifi-dual-ring', 'scifi-single-ring'
+    );
+    
+    // 只重置样式属性，不改变核心定位
+    node.style.animation = '';
+    node.style.background = '';
+    node.style.boxShadow = '';
+    
+    // 恢复 top 位置
+    if (savedTop) {
+      node.style.top = savedTop;
+    }
+  }
+  
+  /**
+   * 应用圣诞主题节点样式 - 立体圆球效果
+   * 修复：标记的 node 点击时显示标记颜色（红色更亮）
+   */
+  private applyChristmasNodeStyle(node: HTMLElement, isActive: boolean, isPinned: boolean): void {
+    // 添加圣诞主题类名
+    node.classList.add('christmas-node-sphere');
+    
+    // 基础变换和层级
+    if (isActive && isPinned) {
+      // 标记且激活 - 红色更亮更大
+      node.style.transform = 'translate(-50%, -50%) scale(1.4)';
+      node.style.zIndex = '10';
+      node.classList.add('christmas-node-pinned-active');
+    } else if (isActive) {
+      node.style.transform = 'translate(-50%, -50%) scale(1.4)';
+      node.style.zIndex = '10';
+      node.classList.add('christmas-node-active');
+    } else if (isPinned) {
+      node.style.transform = 'translate(-50%, -50%) scale(1.2)';
+      node.style.zIndex = '5';
+      node.classList.add('christmas-node-pinned');
+    } else {
+      node.style.transform = 'translate(-50%, -50%) scale(1)';
+      node.style.zIndex = '1';
+      node.classList.add('christmas-node-default');
+    }
+    
+    // 清除溢出限制以显示阴影
+    node.style.overflow = 'visible';
+    node.style.border = 'none';
+  }
+  
+  /**
+   * 应用科幻主题节点样式 - 瞄准图案
+   * 使用科技蓝色 (#00A8FF)，标记时红色
+   * 按住时放大SVG而不是改变颜色
+   */
+  private applySciFiNodeStyle(node: HTMLElement, isActive: boolean, isPinned: boolean): void {
+    // 科技蓝色，标记时为红色
+    const techBlue = '#00A8FF';
+    const color = isPinned ? '#FF4444' : techBlue;
+    const glowColor = isPinned ? 'rgba(255, 68, 68, 0.6)' : 'rgba(0, 168, 255, 0.6)';
+    
+    // 添加科幻主题类名
+    node.classList.add('scifi-single-ring');
+    
+    // 清除默认背景样式
+    node.style.backgroundColor = 'transparent';
+    node.style.border = 'none';
+    node.style.boxShadow = 'none';
+    node.style.overflow = 'visible';
+    
+    // 基础变换 - 按住时放大效果更明显
+    if (isActive && isPinned) {
+      node.style.transform = 'translate(-50%, -50%) scale(2.0)';
+      node.style.zIndex = '10';
+    } else if (isActive) {
+      node.style.transform = 'translate(-50%, -50%) scale(1.8)';
+      node.style.zIndex = '10';
+    } else if (isPinned) {
+      node.style.transform = 'translate(-50%, -50%) scale(1.3)';
+      node.style.zIndex = '5';
+    } else {
+      node.style.transform = 'translate(-50%, -50%) scale(1.2)';
+      node.style.zIndex = '1';
+    }
+    
+    // 创建瞄准图案容器 - 放大SVG
+    const crosshair = document.createElement('div');
+    crosshair.className = 'scifi-crosshair';
+    Object.assign(crosshair.style, {
+      position: 'absolute',
+      width: '150%',
+      height: '150%',
+      pointerEvents: 'none',
+      top: '-25%',
+      left: '-25%'
+    });
+    
+    // 根据状态设置动画 - 按住时旋转更快
+    const shouldRotate = isActive || isPinned;
+    const rotateSpeed = isActive ? '1.5s' : '3s';
+    const glowIntensity = isActive ? '10px' : (isPinned ? '8px' : '5px');
+    
+    crosshair.innerHTML = `
+      <svg width="100%" height="100%" viewBox="0 0 100 100" style="filter: drop-shadow(0 0 ${glowIntensity} ${glowColor}); ${shouldRotate ? `animation: scifiRingRotate ${rotateSpeed} linear infinite;` : ''}">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="${color}" stroke-width="2.5"/>
+        <circle cx="50" cy="50" r="28" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.6"/>
+        <circle cx="50" cy="50" r="5" fill="${color}"/>
+        <line x1="50" y1="3" x2="50" y2="18" stroke="${color}" stroke-width="2.5"/>
+        <line x1="50" y1="82" x2="50" y2="97" stroke="${color}" stroke-width="2.5"/>
+        <line x1="3" y1="50" x2="18" y2="50" stroke="${color}" stroke-width="2.5"/>
+        <line x1="82" y1="50" x2="97" y2="50" stroke="${color}" stroke-width="2.5"/>
+      </svg>
+    `;
+    
+    node.appendChild(crosshair);
+  }
+  
+  /**
+   * 应用普通主题节点样式
+   */
+  private applyNormalNodeStyle(node: HTMLElement, isActive: boolean, isPinned: boolean): void {
+    // 恢复标准节点外观
+    node.style.overflow = 'hidden';
     
     if (isActive) {
       // 激活状态
       node.style.transform = 'translate(-50%, -50%) scale(1.4)';
       node.style.zIndex = '10';
       node.style.boxShadow = `0 0 10px ${this.currentTheme.activeShadow}`;
-      node.style.border = '3px solid #fff'; // 白色边框
+      node.style.border = '3px solid #fff';
       
-      // 如果也被标记了，内部用重点色，否则用当前主题 Active 色
       if (isPinned) {
-        node.style.backgroundColor = this.currentTheme.pinnedColor; // 使用主题重点色
+        node.style.backgroundColor = this.currentTheme.pinnedColor;
       } else {
         node.style.backgroundColor = this.currentTheme.activeColor;
       }
@@ -1304,13 +1633,10 @@ export class RightSideTimelinejump {
       node.style.border = '2px solid #fff';
       
       if (isPinned) {
-        // 标记状态
-        node.style.backgroundColor = this.currentTheme.pinnedColor; // 使用主题重点色
-        // 标记的节点比普通节点稍大
+        node.style.backgroundColor = this.currentTheme.pinnedColor;
         node.style.transform = 'translate(-50%, -50%) scale(1.2)';
       } else {
-        // 普通状态 (未选中)
-        node.style.backgroundColor = this.currentTheme.defaultNodeColor; // 使用主题默认色
+        node.style.backgroundColor = this.currentTheme.defaultNodeColor;
         node.style.transform = 'translate(-50%, -50%) scale(1)';
       }
     }
@@ -1706,6 +2032,10 @@ export class RightSideTimelinejump {
     if (this.nodesWrapper) {
       this.nodesWrapper.removeEventListener('scroll', this.handleWrapperScroll);
     }
+    
+    // 清理主题效果
+    this.cleanupThemeEffects();
+    
     this.detachSliderEvents();
     this.slider?.remove();
     this.container.remove();
