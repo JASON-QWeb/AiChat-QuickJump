@@ -69,7 +69,7 @@
 ### 🚀 快速安装
 
 #### Chrome 网上插件商店（推荐）
-即将上线，敬请期待...
+[![chrome-extension](https://img.shields.io/badge/Install_on-Chrome-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/aichat-quickjump-%E6%A0%87%E8%AE%B0%E6%94%B6%E8%97%8F%E5%B9%B6%E5%BF%AB%E9%80%9F%E8%B7%B3/pghjaalonebkkelmencpmaieglpfehfp)
 
 #### Edge 网上插件商店（推荐）
 [![edge-extension](https://img.shields.io/badge/Install_on-Edge-0078D7?logo=microsoft-edge&logoColor=white)](https://microsoftedge.microsoft.com/addons/detail/ai-chat-quick-jump/hffbnbdeddbimnmgbbdhlhjbmkflpnpo)
