@@ -293,7 +293,9 @@ export class SciFiThemeEffects {
   private matrixCanvas: HTMLCanvasElement | null = null;
   private matrixCtx: CanvasRenderingContext2D | null = null;
   private matrixAnimationId: number | null = null;
+  private matrixInterval: ReturnType<typeof setInterval> | null = null;
   private matrixChars: Array<{x: number; y: number; char: string; speed: number; opacity: number}> = [];
+  private isInitialized: boolean = false;
   
   // 科技蓝色
   static readonly TECH_BLUE = '#00A8FF';
@@ -305,8 +307,13 @@ export class SciFiThemeEffects {
   
   /**
    * 初始化科幻主题效果
+   * 防止重复初始化
    */
   init(): void {
+    if (this.isInitialized) {
+      return;
+    }
+    this.isInitialized = true;
     this.createFluidBar();
     this.createMatrixCanvas();
     this.startMatrixAnimation();
@@ -367,8 +374,8 @@ export class SciFiThemeEffects {
     // 可用的乱码字符
     const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
     
-    // 定时添加新字符
-    setInterval(() => {
+    // 定时添加新字符 - 保存句柄以便清理
+    this.matrixInterval = setInterval(() => {
       if (this.matrixChars.length < 15 && Math.random() < 0.3) {
         const canvasWidth = this.matrixCanvas?.width || 90;
         this.matrixChars.push({
@@ -596,12 +603,26 @@ export class SciFiThemeEffects {
    * 销毁效果
    */
   destroy(): void {
+    // 清理动画帧
     if (this.matrixAnimationId) {
       cancelAnimationFrame(this.matrixAnimationId);
+      this.matrixAnimationId = null;
     }
+    // 清理定时器
+    if (this.matrixInterval) {
+      clearInterval(this.matrixInterval);
+      this.matrixInterval = null;
+    }
+    // 移除 DOM 元素
     this.fluidElement?.remove();
+    this.fluidElement = null;
     this.matrixCanvas?.remove();
+    this.matrixCanvas = null;
+    this.matrixCtx = null;
+    // 清空数据
     this.matrixChars = [];
+    // 重置初始化状态
+    this.isInitialized = false;
   }
 }
 
