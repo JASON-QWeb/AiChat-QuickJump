@@ -18,6 +18,8 @@ export const messages = {
     'options.theme.lavender': '薰衣草紫',
     'options.theme.pink': '粉红色',
     'options.theme.orange': '橘黄色',
+    'options.theme.christmas': '圣诞',
+    'options.theme.scifi': '未来',
     'options.sites': '站点支持',
     'options.sites.custom': '自定义站点（测试中）',
     'options.sites.custom.desc': '添加其他 LLM 网站（默认使用通用适配逻辑）',
@@ -80,6 +82,8 @@ export const messages = {
     'options.theme.lavender': 'Lavender',
     'options.theme.pink': 'Pink',
     'options.theme.orange': 'Orange',
+    'options.theme.christmas': 'Christmas',
+    'options.theme.scifi': 'Future',
     'options.sites': 'Site Support',
     'options.sites.custom': 'Custom Sites (Beta)',
     'options.sites.custom.desc': 'Add other LLM websites (uses generic adapter)',
@@ -139,7 +143,7 @@ export function getTranslation(key: string, lang: Language): string {
   // 处理 auto 情况
   const targetLang = lang === 'auto' ? getSystemLanguage() : lang;
   
-  const dict = messages[targetLang] || messages['en'];
+  const dict = messages[targetLang as keyof typeof messages] || messages['en'];
   return dict[key as keyof typeof dict] || key;
 }
 

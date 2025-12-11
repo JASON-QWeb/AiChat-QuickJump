@@ -13,6 +13,8 @@ export interface TimelineTheme {
   tooltipTextColor: string;       // Tooltip 文字颜色
   highlightBorder: string;        // 高亮边框颜色
   highlightBackground: string;    // 高亮背景颜色
+  // 特殊主题类型标识
+  themeType?: 'christmas' | 'scifi' | 'normal';
 }
 
 export const themes: Record<string, TimelineTheme> = {
@@ -86,7 +88,34 @@ export const themes: Record<string, TimelineTheme> = {
     tooltipBackgroundColor: 'rgba(255, 243, 224, 0.95)', // 极浅橘
     tooltipTextColor: '#E65100', // 深橘
     highlightBorder: '#FF9800',
-    highlightBackground: 'rgba(255, 152, 0, 0.1)'
+    highlightBackground: 'rgba(255, 152, 0, 0.1)',
+    themeType: 'normal'
+  },
+  christmas: {
+    name: '圣诞',
+    activeColor: '#FFD700', // 金黄色 (激活节点常亮)
+    activeShadow: 'rgba(255, 215, 0, 0.8)',
+    defaultNodeColor: '#B8860B', // 暗黄色 (默认节点呼吸灯)
+    timelineBarColor: 'linear-gradient(180deg, #FF0000, #00FF00, #FF0000, #00FF00)', // 红绿灯条
+    pinnedColor: '#FFD700', // 金色 (标记节点更亮更大)
+    tooltipBackgroundColor: 'rgba(255, 253, 245, 0.98)', // 温暖蛋黄白
+    tooltipTextColor: '#8B4513', // 深褐色
+    highlightBorder: '#FFD700',
+    highlightBackground: 'rgba(255, 215, 0, 0.15)',
+    themeType: 'christmas'
+  },
+  scifi: {
+    name: '未来',
+    activeColor: '#00A8FF', // 科技蓝 (激活节点)
+    activeShadow: 'rgba(0, 168, 255, 0.6)',
+    defaultNodeColor: '#0088CC', // 深科技蓝 (默认节点)
+    timelineBarColor: 'rgba(180, 150, 220, 0.5)', // 淡紫色梦幻
+    pinnedColor: '#FF4444', // 红色 (标注节点)
+    tooltipBackgroundColor: 'rgba(40, 35, 60, 0.92)', // 淡紫灰，适配主题
+    tooltipTextColor: '#B8D4FF', // 淡蓝色文字
+    highlightBorder: '#00A8FF',
+    highlightBackground: 'rgba(0, 168, 255, 0.1)',
+    themeType: 'scifi'
   }
 };
 
