@@ -76,7 +76,7 @@ When chat with AI:
 
 #### Chrome Web Store (Recommended)
 
-Coming soon...
+[![chrome-extension](https://img.shields.io/badge/Install_on-Chrome-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/aichat-quickjump-%E6%A0%87%E8%AE%B0%E6%94%B6%E8%97%8F%E5%B9%B6%E5%BF%AB%E9%80%9F%E8%B7%B3/pghjaalonebkkelmencpmaieglpfehfp)
 
 #### Microsoft Edge Add-ons (Recommended)
 
