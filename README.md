@@ -63,7 +63,9 @@
 - ✅ **Claude** (claude.ai)
 - ✅ **Gemini** (gemini.google.com)
 - ✅ **Deepseek** (chat.deepseek.com)
-- ✅ **Grok** (grok.com)
+- ✅ **Qwen** (qianwen.com)
+- ✅ **Kimi** (kimi.com)
+- ✅ **豆包** (qdoubao.com)
 - 🔧 支持自定义 URL（可在设置中添加其他 AI 聊天网站）
 
 ### 🚀 快速安装

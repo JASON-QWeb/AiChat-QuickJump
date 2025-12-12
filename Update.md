@@ -1,4 +1,4 @@
-# AI Chat Quick Jump — v2.0.0
+# AI Chat Quick Jump — v2.0.1
 
 ---
 
