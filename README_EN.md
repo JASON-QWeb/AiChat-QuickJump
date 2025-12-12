@@ -69,7 +69,8 @@ When chat with AI:
 - ✅ **Claude** (claude.ai)
 - ✅ **Gemini** (gemini.google.com)
 - ✅ **DeepSeek** (chat.deepseek.com)
-- ✅ **Grok** (grok.com)
+- ✅ **Qwen** (qianwen.com)
+- ✅ **Kimi** (kimi.com)
 - 🔧 Supports **custom URLs** (add other AI chat websites in the options page)
 
 ### 🚀 Installation

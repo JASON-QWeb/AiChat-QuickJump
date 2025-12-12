@@ -26,6 +26,9 @@ async function getSettings() {
     'enable_gemini',
     'enable_deepseek',
     'enable_grok',
+    'enable_kimi',
+    'enable_qwen',
+    'enable_doubao',
     'ui_theme',
     'language'
   ]);
@@ -410,6 +413,12 @@ async function init() {
         isEnabled = settings.enable_deepseek !== false;
     } else if (adapter.name === 'Grok') {
         isEnabled = settings.enable_grok !== false;
+    } else if (adapter.name === 'Kimi') {
+        isEnabled = settings.enable_kimi !== false;
+    } else if (adapter.name === 'Qwen') {
+        isEnabled = settings.enable_qwen !== false;
+    } else if (adapter.name === '豆包') {
+        isEnabled = settings.enable_doubao !== false;
     }
 
     // console.log('[LLM-Nav] Adapter enabled:', isEnabled);

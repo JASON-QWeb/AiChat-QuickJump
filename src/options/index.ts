@@ -8,6 +8,9 @@ const CONFIG_KEYS = {
   ENABLE_GEMINI: 'enable_gemini',
   ENABLE_DEEPSEEK: 'enable_deepseek',
   ENABLE_GROK: 'enable_grok',
+  ENABLE_KIMI: 'enable_kimi',
+  ENABLE_QWEN: 'enable_qwen',
+  ENABLE_DOUBAO: 'enable_doubao',
   UI_THEME: 'ui_theme',
   CUSTOM_URLS: 'custom_urls',
   LANGUAGE: 'language'
@@ -46,6 +49,9 @@ async function loadSettings(): Promise<void> {
       CONFIG_KEYS.ENABLE_GEMINI,
       CONFIG_KEYS.ENABLE_DEEPSEEK,
       CONFIG_KEYS.ENABLE_GROK,
+      CONFIG_KEYS.ENABLE_KIMI,
+      CONFIG_KEYS.ENABLE_QWEN,
+      CONFIG_KEYS.ENABLE_DOUBAO,
       CONFIG_KEYS.UI_THEME,
       CONFIG_KEYS.CUSTOM_URLS,
       CONFIG_KEYS.LANGUAGE
@@ -56,6 +62,9 @@ async function loadSettings(): Promise<void> {
     const enableGemini = result[CONFIG_KEYS.ENABLE_GEMINI] !== false; // 默认启用
     const enableDeepSeek = result[CONFIG_KEYS.ENABLE_DEEPSEEK] !== false; // 默认启用
     const enableGrok = result[CONFIG_KEYS.ENABLE_GROK] !== false; // 默认启用
+    const enableKimi = result[CONFIG_KEYS.ENABLE_KIMI] !== false; // 默认启用
+    const enableQwen = result[CONFIG_KEYS.ENABLE_QWEN] !== false; // 默认启用
+    const enableDoubao = result[CONFIG_KEYS.ENABLE_DOUBAO] !== false; // 默认启用
     const uiTheme = result[CONFIG_KEYS.UI_THEME] || 'auto'; // 默认跟随系统
     const customUrls = result[CONFIG_KEYS.CUSTOM_URLS] || [];
     const language = result[CONFIG_KEYS.LANGUAGE] || 'auto';
@@ -73,6 +82,9 @@ async function loadSettings(): Promise<void> {
     setCheckbox('enable-gemini', enableGemini);
     setCheckbox('enable-deepseek', enableDeepSeek);
     setCheckbox('enable-grok', enableGrok);
+    setCheckbox('enable-kimi', enableKimi);
+    setCheckbox('enable-qwen', enableQwen);
+    setCheckbox('enable-doubao', enableDoubao);
     
     const themeSelect = document.getElementById('ui-theme') as HTMLSelectElement;
     if (themeSelect) {
@@ -221,6 +233,9 @@ document.addEventListener('DOMContentLoaded', () => {
   bindCheckbox('enable-gemini', CONFIG_KEYS.ENABLE_GEMINI);
   bindCheckbox('enable-deepseek', CONFIG_KEYS.ENABLE_DEEPSEEK);
   bindCheckbox('enable-grok', CONFIG_KEYS.ENABLE_GROK);
+  bindCheckbox('enable-kimi', CONFIG_KEYS.ENABLE_KIMI);
+  bindCheckbox('enable-qwen', CONFIG_KEYS.ENABLE_QWEN);
+  bindCheckbox('enable-doubao', CONFIG_KEYS.ENABLE_DOUBAO);
   
   // 监听主题选择变化
   const themeSelect = document.getElementById('ui-theme') as HTMLSelectElement;

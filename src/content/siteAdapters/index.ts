@@ -66,6 +66,9 @@ import { claudeAdapter } from './claudeAdapter';
 import { geminiAdapter } from './geminiAdapter';
 import { deepseekAdapter } from './deepseekAdapter';
 import { grokAdapter } from './grokAdapter';
+import { kimiAdapter } from './kimiAdapter';
+import { qwenAdapter } from './qwenAdapter';
+import { doubaoAdapter } from './doubaoAdapter';
 import { customSiteAdapter } from './customSiteAdapter';
 
 /**
@@ -77,7 +80,10 @@ const adapters: SiteAdapter[] = [
   claudeAdapter,
   geminiAdapter,
   deepseekAdapter,
-  grokAdapter
+  grokAdapter,
+  kimiAdapter,
+  qwenAdapter,
+  doubaoAdapter
 ];
 
 /**
@@ -97,7 +103,15 @@ export function getActiveAdapter(location: Location, customUrls: string[] = []):
   // 2. 检查自定义 URL
   if (customUrls.length > 0) {
     const hostname = location.hostname;
-    if (customUrls.some(url => hostname === url || hostname.endsWith('.' + url))) {
+    if (customUrls.some(url => {
+      // 完全匹配
+      if (hostname === url) return true;
+      // 子域名匹配：hostname 以 .url 结尾（例如 www.example.com 匹配 example.com）
+      if (hostname.endsWith('.' + url)) return true;
+      // 反向匹配：url 以 .hostname 结尾（例如 example.com 匹配 www.example.com）
+      if (url.endsWith('.' + hostname)) return true;
+      return false;
+    })) {
       // 使用通用适配器
       // 我们可以克隆一个实例并覆盖其 isSupported 方法（虽然在这里不是必须的，因为已经匹配了）
       const adapter = Object.create(customSiteAdapter);

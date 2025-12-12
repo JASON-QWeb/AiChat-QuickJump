@@ -66,18 +66,18 @@
     
     .option-label {
       display: flex;
-      flex-direction: column;
+      align-items: center;
     }
     
     .option-label .title {
       color: #333;
       font-weight: 500;
-      margin-bottom: 4px;
     }
     
     .option-label .description {
       color: #666;
       font-size: 13px;
+      margin-left: 8px;
     }
     
     .toggle-switch {
@@ -192,7 +192,7 @@
     <div class="option-item">
       <div class="option-label">
         <span class="title">ChatGPT</span>
-        <span class="description">chatgpt.com</span>
+        <span class="description">(chatgpt.com)</span>
       </div>
       <label class="toggle-switch">
         <input type="checkbox" id="enable-chatgpt" checked>
@@ -203,7 +203,7 @@
     <div class="option-item">
       <div class="option-label">
         <span class="title">Claude</span>
-        <span class="description">claude.ai</span>
+        <span class="description">(claude.ai)</span>
       </div>
       <label class="toggle-switch">
         <input type="checkbox" id="enable-claude" checked>
@@ -214,7 +214,7 @@
     <div class="option-item">
       <div class="option-label">
         <span class="title">Gemini</span>
-        <span class="description">gemini.google.com</span>
+        <span class="description">(gemini.google.com)</span>
       </div>
       <label class="toggle-switch">
         <input type="checkbox" id="enable-gemini" checked>
@@ -225,21 +225,43 @@
     <div class="option-item">
       <div class="option-label">
         <span class="title">DeepSeek</span>
-        <span class="description">chat.deepseek.com</span>
+        <span class="description">(chat.deepseek.com)</span>
       </div>
       <label class="toggle-switch">
         <input type="checkbox" id="enable-deepseek" checked>
         <span class="slider"></span>
       </label>
     </div>
-    
+
     <div class="option-item">
       <div class="option-label">
-        <span class="title">Grok</span>
-        <span class="description">grok.com</span>
+        <span class="title">Kimi</span>
+        <span class="description">(kimi.com)</span>
       </div>
       <label class="toggle-switch">
-        <input type="checkbox" id="enable-grok" checked>
+        <input type="checkbox" id="enable-kimi" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="option-item">
+      <div class="option-label">
+        <span class="title">Qwen</span>
+        <span class="description">(qianwen.com)</span>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="enable-qwen" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="option-item">
+      <div class="option-label">
+        <span class="title">豆包</span>
+        <span class="description">(doubao.com)</span>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="enable-doubao" checked>
         <span class="slider"></span>
       </label>
     </div>
@@ -305,7 +327,7 @@
   </div>
   
   <div class="footer">
-    <p>Version 2.0.0 | Ai Chat Quick jump</p>
+    <p>Version 2.0.1 | Ai Chat Quick jump</p>
   </div>
   
   <script src="index.js" type="module"></script>
