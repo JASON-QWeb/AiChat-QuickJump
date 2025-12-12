@@ -24,11 +24,20 @@
   "content_scripts": [
     {
       "matches": [
+        "https://www.chatgpt.com/*",
         "https://chatgpt.com/*",
+        "https://www.claude.ai/*",
         "https://claude.ai/*",
+        "https://www.gemini.google.com/*",
         "https://gemini.google.com/*",
+        "https://www.chat.deepseek.com/*",
         "https://chat.deepseek.com/*",
-        "https://grok.com/*"
+        "https://www.kimi.com/*",
+        "https://kimi.com/*",
+        "https://www.qianwen.com/*",
+        "https://qianwen.com/*",
+        "https://www.doubao.com/*",
+        "https://doubao.com/*"
       ],
       "js": [
         "content/index.js"

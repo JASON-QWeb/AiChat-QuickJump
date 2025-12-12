@@ -1448,7 +1448,10 @@ export class RightSideTimelinejump {
       'Claude': 'icons/claude-ai-icon.webp',
       'Gemini': 'icons/google-gemini-icon.webp',
       'DeepSeek': 'icons/deepseek.ico',
-      'Grok': 'icons/grok.svg'
+      'Grok': 'icons/grok.svg',
+      'Kimi': 'icons/kimi-icon.png',
+      'Qwen': 'icons/qwen.png',
+      '豆包': 'icons/豆包icon.png'
     };
     
     const iconPath = iconMap[siteName] || 'icons/icon48.svg';

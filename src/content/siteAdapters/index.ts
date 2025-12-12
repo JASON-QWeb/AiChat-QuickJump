@@ -66,6 +66,9 @@ import { claudeAdapter } from './claudeAdapter';
 import { geminiAdapter } from './geminiAdapter';
 import { deepseekAdapter } from './deepseekAdapter';
 import { grokAdapter } from './grokAdapter';
+import { kimiAdapter } from './kimiAdapter';
+import { qwenAdapter } from './qwenAdapter';
+import { doubaoAdapter } from './doubaoAdapter';
 import { customSiteAdapter } from './customSiteAdapter';
 
 /**
@@ -77,7 +80,10 @@ const adapters: SiteAdapter[] = [
   claudeAdapter,
   geminiAdapter,
   deepseekAdapter,
-  grokAdapter
+  grokAdapter,
+  kimiAdapter,
+  qwenAdapter,
+  doubaoAdapter
 ];
 
 /**
