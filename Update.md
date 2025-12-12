@@ -2,27 +2,16 @@
 
 ---
 
-## 🎨 加入两个新主题
-- 圣诞主题 
-- 未来主题
+## 添加更多平台支持
+ - 豆包
+ - Kimi
+ - 千问
 
 ---
 
-## ✔ 其余优化
-- 多项已知问题修复
-
----
-
-## 🎨 Added two new themes
-
-- Christmas theme
-
-- Future theme
-
----
-
-## ✔ Other optimizations
-
-- Fixed several known issues
+## Add more platforms support
+ - Doubao
+ - Kimi
+ - Qwen
 
 ---
