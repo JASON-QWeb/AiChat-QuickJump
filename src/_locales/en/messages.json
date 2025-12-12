@@ -4,7 +4,7 @@
     "description": "Name of the extension"
   },
   "extensionDescription": {
-    "message": "Provide quick jump, marking, and bookmarking functions for ChatGPT, Gemini, Grok, and other mainstream AI websites. Support customizable shortcuts, themes, and even custom website support.",
+    "message": "Provide quick jump, marking, and bookmarking functions for ChatGPT, Gemini, Deepseek, and other mainstream AI websites. Support customizable shortcuts, themes, and even custom website support.",
     "description": "Description of the extension"
   },
   "cmdPrevAnswer": {
