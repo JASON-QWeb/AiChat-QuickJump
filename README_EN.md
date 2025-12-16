@@ -49,7 +49,7 @@ When chat with AI:
 - **Long-press a dot for 0.5 seconds** to pin important messages; pinned items are automatically added to your favorites list
 - **Bottom “★★★” button** opens the favorites panel: browse all your saved conversations and jump back to the original messages
 - **Editable favorite title**: make your saved items easier to recognize and manage
-- **Cross-site favorites sync**: share the same favorites list across ChatGPT, Grok and other supported AI platforms
+- **Cross-site favorites sync**: share the same favorites list across Gemini, ChatGPT, Deepseek and other supported AI platforms
 
 #### ⌨️ Powerful keyboard shortcuts
 
@@ -61,7 +61,7 @@ When chat with AI:
 #### 🎨 Theme-aware UI
 
 - Supports multiple themes: **Auto / Light / Dark / Sky Blue / Lavender / Pink / Orange**
-- Clean, minimal UI that stays out of the way of your content
+- New Dynamic Theme: **Future/Christmas** 
 
 #### 🌐 Multi-platform support
 
