@@ -1,0 +1,26 @@
+{
+  "extensionName": {
+    "message": "AiChat Quickjump: Mark and quick Jump to your AI Chat",
+    "description": "Name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Provide quick jump, marking, and bookmarking functions for ChatGPT, Gemini, Deepseek, and so on. Support customizable shortcuts, themes.",
+    "description": "Description of the extension"
+  },
+  "cmdPrevAnswer": {
+    "message": "Go to previous answer",
+    "description": "Command description"
+  },
+  "cmdNextAnswer": {
+    "message": "Go to next answer",
+    "description": "Command description"
+  },
+  "cmdToggleUI": {
+    "message": "Toggle Navigation UI",
+    "description": "Command description"
+  },
+  "cmdTogglePin": {
+    "message": "Toggle Pin for current answer",
+    "description": "Command description"
+  }
+}

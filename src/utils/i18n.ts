@@ -63,7 +63,9 @@ export const messages = {
     'favorites.deleteSubItem': '删除此子项',
     'favorites.confirmDelete': '确定要删除这个收藏吗？',
     'favorites.cancel': '取消',
-    'favorites.confirm': '确定'
+    'favorites.confirm': '确定',
+    'favorites.footer.openSource': '项目已开源，欢迎🌟Star和反馈：',
+    'favorites.footer.settings': '设置'
   },
   'en': {
     // Options Page
@@ -127,7 +129,9 @@ export const messages = {
     'favorites.deleteSubItem': 'Delete item',
     'favorites.confirmDelete': 'Are you sure you want to delete this?',
     'favorites.cancel': 'Cancel',
-    'favorites.confirm': 'Confirm'
+    'favorites.confirm': 'Confirm',
+    'favorites.footer.openSource': 'Welcome to 🌟Star and feedback:',
+    'favorites.footer.settings': 'Settings'
   }
 };
 
@@ -146,4 +150,3 @@ export function getTranslation(key: string, lang: Language): string {
   const dict = messages[targetLang as keyof typeof messages] || messages['en'];
   return dict[key as keyof typeof dict] || key;
 }
-

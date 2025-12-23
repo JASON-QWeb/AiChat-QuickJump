@@ -745,6 +745,84 @@ export class RightSideTimelinejump {
     }
     
     modal.appendChild(content);
+
+    // 底部栏：开源提示 + 官网链接 + 设置入口
+    const footer = document.createElement('div');
+    Object.assign(footer.style, {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: '12px',
+      padding: '12px 20px',
+      borderTop: '1px solid rgba(128,128,128,0.2)',
+      fontSize: '12px'
+    });
+
+    const footerLeft = document.createElement('div');
+    Object.assign(footerLeft.style, {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      flex: '1',
+      minWidth: '0',
+      flexWrap: 'wrap',
+      opacity: '0.75'
+    });
+
+    const footerText = document.createElement('span');
+    footerText.textContent = this.t('favorites.footer.openSource');
+
+    const siteLink = document.createElement('a');
+    siteLink.href = 'https://www.aichatjump.click';
+    siteLink.textContent = 'www.aichatjump.click';
+    siteLink.target = '_blank';
+    siteLink.rel = 'noopener noreferrer';
+    Object.assign(siteLink.style, {
+      color: this.currentTheme.pinnedColor,
+      textDecoration: 'none',
+      wordBreak: 'break-all'
+    });
+    siteLink.addEventListener('mouseenter', () => siteLink.style.textDecoration = 'underline');
+    siteLink.addEventListener('mouseleave', () => siteLink.style.textDecoration = 'none');
+
+    footerLeft.appendChild(footerText);
+    footerLeft.appendChild(siteLink);
+
+    const settingsBtn = document.createElement('button');
+    settingsBtn.type = 'button';
+    settingsBtn.title = this.t('favorites.footer.settings');
+    settingsBtn.setAttribute('aria-label', this.t('favorites.footer.settings'));
+    settingsBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V22a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 20.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 3.6a1.65 1.65 0 0 0 1-1.51V2a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 20.4 9a1.65 1.65 0 0 0 1.51 1H22a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+    Object.assign(settingsBtn.style, {
+      background: 'none',
+      border: 'none',
+      padding: '6px',
+      cursor: 'pointer',
+      color: this.currentTheme.tooltipTextColor,
+      opacity: '0.6',
+      borderRadius: '8px',
+      transition: 'all 0.2s ease',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: '0'
+    });
+    settingsBtn.addEventListener('mouseenter', () => {
+      settingsBtn.style.opacity = '1';
+      settingsBtn.style.backgroundColor = 'rgba(128,128,128,0.12)';
+    });
+    settingsBtn.addEventListener('mouseleave', () => {
+      settingsBtn.style.opacity = '0.6';
+      settingsBtn.style.backgroundColor = 'transparent';
+    });
+    settingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.openOptionsPage();
+    });
+
+    footer.appendChild(footerLeft);
+    footer.appendChild(settingsBtn);
+    modal.appendChild(footer);
     
     // 添加遮罩层
     const overlay = document.createElement('div');
@@ -763,6 +841,28 @@ export class RightSideTimelinejump {
     document.body.appendChild(overlay);
     document.body.appendChild(modal);
     this.favoritesModal = modal;
+  }
+
+  private openOptionsPage(): void {
+    try {
+      chrome.runtime.sendMessage({ type: 'LLM_NAV_OPEN_OPTIONS' });
+      return;
+    } catch {
+      // ignore
+    }
+
+    try {
+      chrome.runtime.openOptionsPage?.();
+      return;
+    } catch {
+      // ignore
+    }
+
+    try {
+      window.open(chrome.runtime.getURL('options/index.html'), '_blank', 'noopener,noreferrer');
+    } catch {
+      // ignore
+    }
   }
 
   /**

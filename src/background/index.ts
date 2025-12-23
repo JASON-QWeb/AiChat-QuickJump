@@ -96,3 +96,18 @@ chrome.commands.onCommand.addListener((command) => {
     }
   });
 });
+
+// 打开插件选项页（供 content script 调用）
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type !== 'LLM_NAV_OPEN_OPTIONS') return;
+
+  try {
+    chrome.runtime.openOptionsPage(() => {
+      sendResponse({ success: !chrome.runtime.lastError });
+    });
+  } catch (err) {
+    sendResponse({ success: false, error: String(err) });
+  }
+
+  return true;
+});
