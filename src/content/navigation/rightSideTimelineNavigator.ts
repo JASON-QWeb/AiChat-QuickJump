@@ -1,6 +1,21 @@
 import type { PromptAnswerItem } from './answerIndexManager';
 import { PinnedStore } from '../store/pinnedStore';
 import { FavoriteStore, type FavoriteConversation } from '../store/favoriteStore';
+import {
+  FavoriteArchiveStore,
+  addArchiveLinkToFolder,
+  cleanupArchivedLinks,
+  createArchiveFolder,
+  deleteArchiveFolder,
+  findArchiveFolder,
+  getAllArchivedLinkKeys,
+  removeArchiveLinkFromFolder,
+  renameArchiveFolder,
+  toFavoriteLinkKey,
+  type FavoriteArchiveLink,
+  type FavoriteArchiveState,
+  type FavoriteArchiveFolder
+} from '../store/favoriteArchiveStore';
 import { themes, resolveTheme, type ThemeMode, type TimelineTheme } from './themes';
 import { getTranslation, getSystemLanguage, type Language } from '../../utils/i18n';
 import { 
@@ -657,13 +672,575 @@ export class RightSideTimelinejump {
       this.favoritesModal.remove();
       this.favoritesModal = null;
     }
-    
-    const favorites = await FavoriteStore.loadAll();
-    
-    // 创建弹窗
+
+    type FavoriteLinkInfo = {
+      key: string;
+      link: FavoriteArchiveLink;
+      conv: FavoriteConversation;
+      promptText: string;
+      timestamp: number;
+    };
+
+    const buildLinkIndex = (favs: FavoriteConversation[]) => {
+      const byKey = new Map<string, FavoriteLinkInfo>();
+      const allLinks: FavoriteLinkInfo[] = [];
+
+      favs.forEach((conv) => {
+        conv.items.forEach((item) => {
+          const link: FavoriteArchiveLink = {
+            conversationId: conv.conversationId,
+            nodeIndex: item.nodeIndex
+          };
+          const key = toFavoriteLinkKey(link);
+          const info: FavoriteLinkInfo = {
+            key,
+            link,
+            conv,
+            promptText: item.promptText,
+            timestamp: item.timestamp
+          };
+          byKey.set(key, info);
+          allLinks.push(info);
+        });
+      });
+
+      allLinks.sort((a, b) => b.timestamp - a.timestamp);
+      return { byKey, allLinks, existingKeys: new Set(allLinks.map((l) => l.key)) };
+    };
+
+    let favorites = await FavoriteStore.loadAll();
+    let { byKey: linkInfoByKey, allLinks: allFavoriteLinks, existingKeys: existingLinkKeys } =
+      buildLinkIndex(favorites);
+
+    let archiveState: FavoriteArchiveState = await FavoriteArchiveStore.load();
+    if (cleanupArchivedLinks(archiveState, existingLinkKeys)) {
+      await FavoriteArchiveStore.save(archiveState);
+    }
+
+    const expandedFolderIds = new Set<string>();
+    archiveState.rootFolders.forEach((f) => expandedFolderIds.add(f.id));
+
+    let importOverlay: HTMLElement | null = null;
+    let importListContainer: HTMLElement | null = null;
+    let importFolderId: string | null = null;
+    let archiveContent: HTMLElement | null = null;
+
+    const refreshFavoritesCache = async (): Promise<void> => {
+      favorites = await FavoriteStore.loadAll();
+      const built = buildLinkIndex(favorites);
+      linkInfoByKey = built.byKey;
+      allFavoriteLinks = built.allLinks;
+      existingLinkKeys = built.existingKeys;
+      if (cleanupArchivedLinks(archiveState, existingLinkKeys)) {
+        await FavoriteArchiveStore.save(archiveState);
+      }
+    };
+
+    const hoverBg =
+      this.currentTheme.name === '暗色' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+    const createIconButton = (opts: {
+      title: string;
+      svg: string;
+      onClick: (e: MouseEvent) => void;
+      danger?: boolean;
+    }): HTMLButtonElement => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.title = opts.title;
+      btn.setAttribute('aria-label', opts.title);
+      btn.innerHTML = opts.svg;
+      Object.assign(btn.style, {
+        background: 'none',
+        border: 'none',
+        padding: '6px',
+        cursor: 'pointer',
+        color: opts.danger ? '#e53935' : this.currentTheme.tooltipTextColor,
+        opacity: '0.6',
+        borderRadius: '8px',
+        transition: 'all 0.2s ease',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: '0'
+      });
+      btn.addEventListener('mouseenter', () => {
+        btn.style.opacity = '1';
+        btn.style.backgroundColor = hoverBg;
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.opacity = '0.6';
+        btn.style.backgroundColor = 'transparent';
+      });
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        opts.onClick(e);
+      });
+      return btn;
+    };
+
+    const closeImportDialog = (): void => {
+      if (importOverlay) {
+        importOverlay.remove();
+        importOverlay = null;
+        importListContainer = null;
+        importFolderId = null;
+      }
+    };
+
+    const renderImportList = (): void => {
+      if (!importListContainer || !importFolderId) return;
+
+      const listContainer = importListContainer;
+      const targetFolderId = importFolderId;
+
+      listContainer.innerHTML = '';
+      const archivedKeys = getAllArchivedLinkKeys(archiveState);
+      const available = allFavoriteLinks.filter((l) => !archivedKeys.has(l.key));
+
+      if (available.length === 0) {
+        const empty = document.createElement('div');
+        empty.textContent = this.t('favorites.archive.noImportable');
+        Object.assign(empty.style, {
+          padding: '18px 12px',
+          textAlign: 'center',
+          opacity: '0.7'
+        });
+        listContainer.appendChild(empty);
+        return;
+      }
+
+      available.forEach((info) => {
+        const row = document.createElement('div');
+        Object.assign(row.style, {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 10px',
+          borderRadius: '10px',
+          cursor: 'default'
+        });
+
+        row.addEventListener('mouseenter', () => {
+          row.style.backgroundColor = hoverBg;
+        });
+        row.addEventListener('mouseleave', () => {
+          row.style.backgroundColor = 'transparent';
+        });
+
+        const text = document.createElement('div');
+        Object.assign(text.style, {
+          flex: '1',
+          minWidth: '0',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2px'
+        });
+
+        const main = document.createElement('div');
+        const displayText =
+          info.promptText.length > 60 ? info.promptText.substring(0, 60) + '...' : info.promptText;
+        main.textContent = displayText;
+        Object.assign(main.style, {
+          fontSize: '13px',
+          fontWeight: '500',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        });
+
+        const sub = document.createElement('div');
+        sub.textContent = `${info.conv.siteName} · ${info.conv.title}`;
+        Object.assign(sub.style, {
+          fontSize: '11px',
+          opacity: '0.65',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        });
+
+        text.appendChild(main);
+        text.appendChild(sub);
+
+        const addBtn = createIconButton({
+          title: this.t('favorites.archive.addToFolder'),
+          svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>`,
+          onClick: async () => {
+            addArchiveLinkToFolder(archiveState, targetFolderId, info.link);
+            await FavoriteArchiveStore.save(archiveState);
+            renderArchiveTree();
+            renderImportList();
+          }
+        });
+
+        row.appendChild(text);
+        row.appendChild(addBtn);
+        listContainer.appendChild(row);
+      });
+    };
+
+    const openImportDialog = async (folderId: string): Promise<void> => {
+      await refreshFavoritesCache();
+      closeImportDialog();
+
+      const folder = findArchiveFolder(archiveState, folderId);
+      if (!folder) return;
+      importFolderId = folderId;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'llm-favorites-import-overlay';
+      Object.assign(overlay.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        right: '0',
+        bottom: '0',
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        zIndex: '2147483648',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      });
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeImportDialog();
+      });
+
+      const dialog = document.createElement('div');
+      Object.assign(dialog.style, {
+        backgroundColor: this.currentTheme.tooltipBackgroundColor,
+        color: this.currentTheme.tooltipTextColor,
+        borderRadius: '12px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
+        width: '720px',
+        maxWidth: '92vw',
+        maxHeight: '75vh',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      });
+
+      const header = document.createElement('div');
+      Object.assign(header.style, {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '14px 16px',
+        borderBottom: '1px solid rgba(128,128,128,0.2)'
+      });
+
+      const title = document.createElement('div');
+      title.textContent = `${this.t('favorites.archive.importTo')}: ${folder.name}`;
+      Object.assign(title.style, { fontSize: '14px', fontWeight: '600', overflow: 'hidden' });
+
+      const closeBtn = createIconButton({
+        title: this.t('favorites.archive.close'),
+        svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+        onClick: () => closeImportDialog()
+      });
+
+      header.appendChild(title);
+      header.appendChild(closeBtn);
+
+      const list = document.createElement('div');
+      Object.assign(list.style, {
+        flex: '1',
+        overflowY: 'auto',
+        padding: '10px 12px'
+      });
+
+      importOverlay = overlay;
+      importListContainer = list;
+
+      dialog.appendChild(header);
+      dialog.appendChild(list);
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+
+      renderImportList();
+    };
+
+    const renderFavoritesList = (container: HTMLElement): void => {
+      container.innerHTML = '';
+      if (favorites.length === 0) {
+        const emptyMsg = document.createElement('p');
+        emptyMsg.textContent = this.t('favorites.empty');
+        Object.assign(emptyMsg.style, {
+          textAlign: 'center',
+          color: 'rgba(128,128,128,0.8)',
+          padding: '40px 0'
+        });
+        container.appendChild(emptyMsg);
+        return;
+      }
+
+      favorites.forEach((conv) => {
+        const convItem = this.createConversationItem(conv);
+        container.appendChild(convItem);
+      });
+    };
+
+    const renderArchiveTree = (): void => {
+      if (!archiveContent) return;
+      const treeContainer = archiveContent;
+
+      treeContainer.innerHTML = '';
+
+      if (archiveState.rootFolders.length === 0) {
+        const empty = document.createElement('div');
+        empty.textContent = this.t('favorites.archive.noFolders');
+        Object.assign(empty.style, {
+          padding: '22px 10px',
+          textAlign: 'center',
+          opacity: '0.7'
+        });
+        treeContainer.appendChild(empty);
+        return;
+      }
+
+      const renderLinkRow = (folderId: string, link: FavoriteArchiveLink): HTMLElement => {
+        const key = toFavoriteLinkKey(link);
+        const info = linkInfoByKey.get(key);
+
+        const row = document.createElement('div');
+        Object.assign(row.style, {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 10px',
+          borderRadius: '10px',
+          cursor: info ? 'pointer' : 'default',
+          marginTop: '6px'
+        });
+
+        row.addEventListener('mouseenter', () => {
+          row.style.backgroundColor = hoverBg;
+        });
+        row.addEventListener('mouseleave', () => {
+          row.style.backgroundColor = 'transparent';
+        });
+
+        const text = document.createElement('div');
+        Object.assign(text.style, {
+          flex: '1',
+          minWidth: '0',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2px'
+        });
+
+        const main = document.createElement('div');
+        main.textContent = info
+          ? info.promptText.length > 60
+            ? info.promptText.substring(0, 60) + '...'
+            : info.promptText
+          : this.t('favorites.archive.missingLink');
+        Object.assign(main.style, {
+          fontSize: '13px',
+          fontWeight: '500',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        });
+
+        const sub = document.createElement('div');
+        sub.textContent = info ? `${info.conv.siteName} · ${info.conv.title}` : '';
+        Object.assign(sub.style, {
+          fontSize: '11px',
+          opacity: '0.65',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        });
+
+        text.appendChild(main);
+        if (sub.textContent) text.appendChild(sub);
+
+        const removeBtn = createIconButton({
+          title: this.t('favorites.archive.removeFromFolder'),
+          svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+          onClick: async () => {
+            removeArchiveLinkFromFolder(archiveState, folderId, link);
+            await FavoriteArchiveStore.save(archiveState);
+            renderArchiveTree();
+            renderImportList();
+          }
+        });
+
+        if (info) {
+          row.addEventListener('click', () => this.navigateToFavorite(info.conv, info.link.nodeIndex));
+        }
+
+        row.appendChild(text);
+        row.appendChild(removeBtn);
+        return row;
+      };
+
+      const renderFolder = (folder: FavoriteArchiveFolder, depth: number): HTMLElement => {
+        const wrapper = document.createElement('div');
+        Object.assign(wrapper.style, { marginTop: depth === 0 ? '10px' : '6px' });
+
+        const row = document.createElement('div');
+        Object.assign(row.style, {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 10px',
+          borderRadius: '12px',
+          cursor: 'pointer',
+          userSelect: 'none'
+        });
+
+        row.addEventListener('mouseenter', () => {
+          row.style.backgroundColor = hoverBg;
+        });
+        row.addEventListener('mouseleave', () => {
+          row.style.backgroundColor = 'transparent';
+        });
+
+        const indent = document.createElement('div');
+        Object.assign(indent.style, { width: `${depth * 16}px`, flexShrink: '0' });
+
+        const hasChildren = folder.folders.length > 0 || folder.links.length > 0;
+        const isExpanded = expandedFolderIds.has(folder.id);
+
+        const expandIcon = document.createElement('span');
+        expandIcon.textContent = hasChildren ? '▶' : '•';
+        Object.assign(expandIcon.style, {
+          fontSize: '10px',
+          opacity: hasChildren ? '0.65' : '0.35',
+          transform: hasChildren && isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+          transition: 'transform 0.2s ease',
+          width: '12px',
+          display: 'inline-flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexShrink: '0'
+        });
+
+        const folderIcon = document.createElement('span');
+        folderIcon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path></svg>`;
+        Object.assign(folderIcon.style, { opacity: '0.8', flexShrink: '0' });
+
+        const name = document.createElement('div');
+        name.textContent = folder.name;
+        Object.assign(name.style, {
+          flex: '1',
+          minWidth: '0',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          fontSize: '13px',
+          fontWeight: '600'
+        });
+
+        const actions = document.createElement('div');
+        Object.assign(actions.style, {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          flexShrink: '0'
+        });
+
+        const importBtn = createIconButton({
+          title: this.t('favorites.archive.import'),
+          svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+          onClick: () => openImportDialog(folder.id)
+        });
+
+        const addFolderBtn = createIconButton({
+          title: this.t('favorites.archive.newSubfolder'),
+          svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h9a2 2 0 0 1 2 2v2"></path><path d="M21 15v6"></path><path d="M18 18h6"></path><path d="M3 11v8a2 2 0 0 0 2 2h11"></path></svg>`,
+          onClick: async () => {
+            const folderName = await this.showInputDialog(
+              this.t('favorites.archive.newSubfolder'),
+              '',
+              this.t('favorites.archive.folderNamePlaceholder')
+            );
+            if (!folderName) return;
+            const created = createArchiveFolder(archiveState, folder.id, folderName);
+            expandedFolderIds.add(folder.id);
+            expandedFolderIds.add(created.id);
+            await FavoriteArchiveStore.save(archiveState);
+            renderArchiveTree();
+          }
+        });
+
+        const renameBtn = createIconButton({
+          title: this.t('favorites.archive.rename'),
+          svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg>`,
+          onClick: async () => {
+            const folderName = await this.showInputDialog(
+              this.t('favorites.archive.rename'),
+              folder.name,
+              this.t('favorites.archive.folderNamePlaceholder')
+            );
+            if (!folderName) return;
+            renameArchiveFolder(archiveState, folder.id, folderName);
+            await FavoriteArchiveStore.save(archiveState);
+            renderArchiveTree();
+          }
+        });
+
+        const deleteBtn = createIconButton({
+          title: this.t('favorites.archive.deleteFolder'),
+          svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>`,
+          danger: true,
+          onClick: async () => {
+            const confirmed = await this.showConfirmDialog(
+              this.t('favorites.archive.folderDeleteConfirm')
+            );
+            if (!confirmed) return;
+            deleteArchiveFolder(archiveState, folder.id);
+            expandedFolderIds.delete(folder.id);
+            await FavoriteArchiveStore.save(archiveState);
+            renderArchiveTree();
+            renderImportList();
+          }
+        });
+
+        actions.appendChild(importBtn);
+        actions.appendChild(addFolderBtn);
+        actions.appendChild(renameBtn);
+        actions.appendChild(deleteBtn);
+
+        row.appendChild(indent);
+        row.appendChild(expandIcon);
+        row.appendChild(folderIcon);
+        row.appendChild(name);
+        row.appendChild(actions);
+
+        row.addEventListener('click', () => {
+          if (!hasChildren) return;
+          if (expandedFolderIds.has(folder.id)) {
+            expandedFolderIds.delete(folder.id);
+          } else {
+            expandedFolderIds.add(folder.id);
+          }
+          renderArchiveTree();
+        });
+
+        wrapper.appendChild(row);
+
+        if (hasChildren && expandedFolderIds.has(folder.id)) {
+          const children = document.createElement('div');
+          Object.assign(children.style, { marginLeft: '0' });
+
+          folder.links.forEach((l) => children.appendChild(renderLinkRow(folder.id, l)));
+          folder.folders.forEach((child) => children.appendChild(renderFolder(child, depth + 1)));
+
+          wrapper.appendChild(children);
+        }
+
+        return wrapper;
+      };
+
+      archiveState.rootFolders.forEach((f) => treeContainer.appendChild(renderFolder(f, 0)));
+    };
+
+    // 创建弹窗（可翻转）
     const modal = document.createElement('div');
     modal.className = 'llm-favorites-modal';
-    
+
     Object.assign(modal.style, {
       position: 'fixed',
       top: '50%',
@@ -671,82 +1248,206 @@ export class RightSideTimelinejump {
       transform: 'translate(-50%, -50%)',
       width: '800px',
       maxWidth: '90vw',
+      height: '70vh',
       maxHeight: '70vh',
       minHeight: '400px',
-      backgroundColor: this.currentTheme.tooltipBackgroundColor,
-      color: this.currentTheme.tooltipTextColor,
       borderRadius: '12px',
       boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
       zIndex: '2147483647',
+      overflow: 'hidden',
+      perspective: '1400px'
+    });
+
+    const card = document.createElement('div');
+    Object.assign(card.style, {
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      transformStyle: 'preserve-3d',
+      transition: 'transform 0.55s ease'
+    });
+
+    const front = document.createElement('div');
+    Object.assign(front.style, {
+      position: 'absolute',
+      inset: '0',
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden'
+      backgroundColor: this.currentTheme.tooltipBackgroundColor,
+      color: this.currentTheme.tooltipTextColor,
+      backfaceVisibility: 'hidden'
     });
-    
-    // 标题栏
-    const header = document.createElement('div');
-    Object.assign(header.style, {
+
+    const back = document.createElement('div');
+    Object.assign(back.style, {
+      position: 'absolute',
+      inset: '0',
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: this.currentTheme.tooltipBackgroundColor,
+      color: this.currentTheme.tooltipTextColor,
+      backfaceVisibility: 'hidden',
+      transform: 'rotateY(180deg)'
+    });
+
+    let isArchiveView = false;
+    const setArchiveView = async (value: boolean) => {
+      isArchiveView = value;
+      card.style.transform = isArchiveView ? 'rotateY(180deg)' : 'rotateY(0deg)';
+      if (isArchiveView) {
+        await refreshFavoritesCache();
+        renderArchiveTree();
+      }
+    };
+
+    const createCloseButton = () =>
+      createIconButton({
+        title: this.t('favorites.archive.close'),
+        svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+        onClick: () => this.closeFavoritesModal()
+      });
+
+    const frontHeader = document.createElement('div');
+    Object.assign(frontHeader.style, {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
       padding: '16px 20px',
       borderBottom: '1px solid rgba(128,128,128,0.2)'
     });
-    
-    const title = document.createElement('h3');
-    title.textContent = this.t('favorites.list');
-    Object.assign(title.style, {
-      margin: '0',
-      fontSize: '16px',
-      fontWeight: '600'
+
+    const frontTitleGroup = document.createElement('div');
+    Object.assign(frontTitleGroup.style, {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      minWidth: '0'
     });
-    
-    const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '✕';
-    Object.assign(closeBtn.style, {
-      background: 'none',
-      border: 'none',
-      fontSize: '18px',
-      cursor: 'pointer',
-      color: this.currentTheme.tooltipTextColor,
-      opacity: '0.6',
-      padding: '4px 8px'
+
+    const frontTitle = document.createElement('h3');
+    frontTitle.textContent = this.t('favorites.list');
+    Object.assign(frontTitle.style, { margin: '0', fontSize: '16px', fontWeight: '600' });
+
+    const flipToArchiveBtn = createIconButton({
+      title: this.t('favorites.archive.open'),
+      svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>`,
+      onClick: async () => setArchiveView(true)
     });
-    closeBtn.addEventListener('mouseenter', () => closeBtn.style.opacity = '1');
-    closeBtn.addEventListener('mouseleave', () => closeBtn.style.opacity = '0.6');
-    closeBtn.addEventListener('click', () => this.closeFavoritesModal());
-    
-    header.appendChild(title);
-    header.appendChild(closeBtn);
-    modal.appendChild(header);
-    
-    // 内容区域
-    const content = document.createElement('div');
-    Object.assign(content.style, {
+
+    frontTitleGroup.appendChild(frontTitle);
+    frontTitleGroup.appendChild(flipToArchiveBtn);
+
+    const frontRight = document.createElement('div');
+    Object.assign(frontRight.style, { display: 'flex', alignItems: 'center', gap: '6px' });
+    frontRight.appendChild(createCloseButton());
+
+    frontHeader.appendChild(frontTitleGroup);
+    frontHeader.appendChild(frontRight);
+
+    const frontContent = document.createElement('div');
+    Object.assign(frontContent.style, {
       flex: '1',
       overflowY: 'auto',
-      padding: '12px 20px'
+      padding: '12px 20px',
+      minHeight: '0'
     });
-    
-    if (favorites.length === 0) {
-      const emptyMsg = document.createElement('p');
-      emptyMsg.textContent = this.t('favorites.empty');
-      Object.assign(emptyMsg.style, {
-        textAlign: 'center',
-        color: 'rgba(128,128,128,0.8)',
-        padding: '40px 0'
-      });
-      content.appendChild(emptyMsg);
-    } else {
-      favorites.forEach(conv => {
-        const convItem = this.createConversationItem(conv);
-        content.appendChild(convItem);
-      });
-    }
-    
-    modal.appendChild(content);
+    renderFavoritesList(frontContent);
 
-    // 底部栏：开源提示 + 官网链接 + 设置入口
+    front.appendChild(frontHeader);
+    front.appendChild(frontContent);
+    front.appendChild(this.createFavoritesModalFooter());
+
+    const backHeader = document.createElement('div');
+    Object.assign(backHeader.style, {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '16px 20px',
+      borderBottom: '1px solid rgba(128,128,128,0.2)'
+    });
+
+    const backTitleGroup = document.createElement('div');
+    Object.assign(backTitleGroup.style, {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      minWidth: '0'
+    });
+
+    const backTitle = document.createElement('h3');
+    backTitle.textContent = this.t('favorites.archive.title');
+    Object.assign(backTitle.style, { margin: '0', fontSize: '16px', fontWeight: '600' });
+
+    const flipToFavoritesBtn = createIconButton({
+      title: this.t('favorites.archive.back'),
+      svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 21 21 21 21 15"></polyline><line x1="3" y1="3" x2="10" y2="10"></line><line x1="21" y1="21" x2="14" y2="14"></line></svg>`,
+      onClick: async () => setArchiveView(false)
+    });
+
+    backTitleGroup.appendChild(backTitle);
+    backTitleGroup.appendChild(flipToFavoritesBtn);
+
+    const backRight = document.createElement('div');
+    Object.assign(backRight.style, { display: 'flex', alignItems: 'center', gap: '6px' });
+
+    const newFolderBtn = createIconButton({
+      title: this.t('favorites.archive.newFolder'),
+      svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path><path d="M12 11v6"></path><path d="M9 14h6"></path></svg>`,
+      onClick: async () => {
+        const folderName = await this.showInputDialog(
+          this.t('favorites.archive.newFolder'),
+          '',
+          this.t('favorites.archive.folderNamePlaceholder')
+        );
+        if (!folderName) return;
+        const created = createArchiveFolder(archiveState, null, folderName);
+        expandedFolderIds.add(created.id);
+        await FavoriteArchiveStore.save(archiveState);
+        renderArchiveTree();
+      }
+    });
+
+    backRight.appendChild(newFolderBtn);
+    backRight.appendChild(createCloseButton());
+
+    backHeader.appendChild(backTitleGroup);
+    backHeader.appendChild(backRight);
+
+    const backContent = document.createElement('div');
+    Object.assign(backContent.style, { flex: '1', overflowY: 'auto', padding: '12px 20px', minHeight: '0' });
+
+    archiveContent = document.createElement('div');
+    backContent.appendChild(archiveContent);
+    renderArchiveTree();
+
+    back.appendChild(backHeader);
+    back.appendChild(backContent);
+    back.appendChild(this.createFavoritesModalFooter());
+
+    card.appendChild(front);
+    card.appendChild(back);
+    modal.appendChild(card);
+
+    // 添加遮罩层
+    const overlay = document.createElement('div');
+    overlay.className = 'llm-favorites-overlay';
+    Object.assign(overlay.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      right: '0',
+      bottom: '0',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      zIndex: '2147483646'
+    });
+    overlay.addEventListener('click', () => this.closeFavoritesModal());
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+    this.favoritesModal = modal;
+  }
+
+  private createFavoritesModalFooter(): HTMLElement {
     const footer = document.createElement('div');
     Object.assign(footer.style, {
       display: 'flex',
@@ -758,35 +1459,25 @@ export class RightSideTimelinejump {
       fontSize: '12px'
     });
 
-    const footerLeft = document.createElement('div');
-    Object.assign(footerLeft.style, {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
+    const openSourceLink = document.createElement('a');
+    openSourceLink.href = 'https://www.aichatjump.click';
+    openSourceLink.textContent = this.t('favorites.footer.openSource');
+    openSourceLink.target = '_blank';
+    openSourceLink.rel = 'noopener noreferrer';
+    Object.assign(openSourceLink.style, {
       flex: '1',
       minWidth: '0',
-      flexWrap: 'wrap',
-      opacity: '0.75'
-    });
-
-    const footerText = document.createElement('span');
-    footerText.textContent = this.t('favorites.footer.openSource');
-
-    const siteLink = document.createElement('a');
-    siteLink.href = 'https://www.aichatjump.click';
-    siteLink.textContent = 'www.aichatjump.click';
-    siteLink.target = '_blank';
-    siteLink.rel = 'noopener noreferrer';
-    Object.assign(siteLink.style, {
       color: this.currentTheme.pinnedColor,
-      textDecoration: 'none',
-      wordBreak: 'break-all'
+      textDecoration: 'underline',
+      textUnderlineOffset: '2px',
+      opacity: '0.8',
+      cursor: 'pointer',
+      whiteSpace: 'normal',
+      wordBreak: 'break-word',
+      lineHeight: '1.4'
     });
-    siteLink.addEventListener('mouseenter', () => siteLink.style.textDecoration = 'underline');
-    siteLink.addEventListener('mouseleave', () => siteLink.style.textDecoration = 'none');
-
-    footerLeft.appendChild(footerText);
-    footerLeft.appendChild(siteLink);
+    openSourceLink.addEventListener('mouseenter', () => (openSourceLink.style.opacity = '1'));
+    openSourceLink.addEventListener('mouseleave', () => (openSourceLink.style.opacity = '0.8'));
 
     const settingsBtn = document.createElement('button');
     settingsBtn.type = 'button';
@@ -820,27 +1511,9 @@ export class RightSideTimelinejump {
       this.openOptionsPage();
     });
 
-    footer.appendChild(footerLeft);
+    footer.appendChild(openSourceLink);
     footer.appendChild(settingsBtn);
-    modal.appendChild(footer);
-    
-    // 添加遮罩层
-    const overlay = document.createElement('div');
-    overlay.className = 'llm-favorites-overlay';
-    Object.assign(overlay.style, {
-      position: 'fixed',
-      top: '0',
-      left: '0',
-      right: '0',
-      bottom: '0',
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      zIndex: '2147483646'
-    });
-    overlay.addEventListener('click', () => this.closeFavoritesModal());
-    
-    document.body.appendChild(overlay);
-    document.body.appendChild(modal);
-    this.favoritesModal = modal;
+    return footer;
   }
 
   private openOptionsPage(): void {
@@ -1240,6 +1913,9 @@ export class RightSideTimelinejump {
     if (overlay) {
       overlay.remove();
     }
+
+    // 移除导入弹窗（如果存在）
+    document.querySelectorAll('.llm-favorites-import-overlay').forEach((el) => el.remove());
   }
 
   /**
@@ -1356,6 +2032,152 @@ export class RightSideTimelinejump {
       
       // 聚焦确认按钮
       confirmBtn.focus();
+    });
+  }
+
+  private showInputDialog(
+    title: string,
+    defaultValue: string,
+    placeholder: string
+  ): Promise<string | null> {
+    return new Promise((resolve) => {
+      const theme = this.currentTheme;
+
+      const overlay = document.createElement('div');
+      Object.assign(overlay.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        right: '0',
+        bottom: '0',
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        zIndex: '2147483649',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      });
+
+      const dialog = document.createElement('div');
+      Object.assign(dialog.style, {
+        backgroundColor: theme.tooltipBackgroundColor,
+        color: theme.tooltipTextColor,
+        borderRadius: '12px',
+        padding: '18px 20px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
+        width: '360px',
+        maxWidth: '86vw'
+      });
+
+      const titleEl = document.createElement('div');
+      titleEl.textContent = title;
+      Object.assign(titleEl.style, { fontSize: '14px', fontWeight: '600', marginBottom: '12px' });
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = defaultValue || '';
+      input.placeholder = placeholder || '';
+      Object.assign(input.style, {
+        width: '100%',
+        boxSizing: 'border-box',
+        padding: '10px 12px',
+        borderRadius: '8px',
+        border: `1px solid ${theme.timelineBarColor}`,
+        backgroundColor: theme.name === '暗色' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+        color: theme.tooltipTextColor,
+        outline: 'none',
+        fontSize: '13px'
+      });
+      input.addEventListener('focus', () => {
+        input.style.borderColor = theme.pinnedColor;
+      });
+      input.addEventListener('blur', () => {
+        input.style.borderColor = theme.timelineBarColor;
+      });
+
+      const btnContainer = document.createElement('div');
+      Object.assign(btnContainer.style, {
+        display: 'flex',
+        justifyContent: 'flex-end',
+        gap: '10px',
+        marginTop: '14px'
+      });
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.textContent = this.t('favorites.cancel');
+      Object.assign(cancelBtn.style, {
+        padding: '8px 16px',
+        border: `1px solid ${theme.timelineBarColor}`,
+        borderRadius: '8px',
+        backgroundColor: 'transparent',
+        color: theme.tooltipTextColor,
+        cursor: 'pointer',
+        fontSize: '13px',
+        transition: 'all 0.2s'
+      });
+      cancelBtn.addEventListener('mouseenter', () => {
+        cancelBtn.style.backgroundColor =
+          theme.name === '暗色' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+      });
+      cancelBtn.addEventListener('mouseleave', () => {
+        cancelBtn.style.backgroundColor = 'transparent';
+      });
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.type = 'button';
+      confirmBtn.textContent = this.t('favorites.confirm');
+      Object.assign(confirmBtn.style, {
+        padding: '8px 16px',
+        border: 'none',
+        borderRadius: '8px',
+        backgroundColor: theme.activeColor,
+        color: '#fff',
+        cursor: 'pointer',
+        fontSize: '13px',
+        transition: 'all 0.2s'
+      });
+      confirmBtn.addEventListener('mouseenter', () => {
+        confirmBtn.style.filter = 'brightness(0.95)';
+      });
+      confirmBtn.addEventListener('mouseleave', () => {
+        confirmBtn.style.filter = 'none';
+      });
+
+      const close = (value: string | null) => {
+        overlay.remove();
+        resolve(value);
+      };
+
+      const submit = () => {
+        const value = input.value.trim();
+        if (!value) {
+          input.style.borderColor = '#e53935';
+          input.focus();
+          return;
+        }
+        close(value);
+      };
+
+      cancelBtn.addEventListener('click', () => close(null));
+      confirmBtn.addEventListener('click', submit);
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) close(null);
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submit();
+        if (e.key === 'Escape') close(null);
+      });
+
+      btnContainer.appendChild(cancelBtn);
+      btnContainer.appendChild(confirmBtn);
+      dialog.appendChild(titleEl);
+      dialog.appendChild(input);
+      dialog.appendChild(btnContainer);
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+
+      input.focus();
+      input.select();
     });
   }
 

@@ -64,8 +64,25 @@ export const messages = {
     'favorites.confirmDelete': '确定要删除这个收藏吗？',
     'favorites.cancel': '取消',
     'favorites.confirm': '确定',
-    'favorites.footer.openSource': '项目已开源，欢迎🌟Star和反馈：',
-    'favorites.footer.settings': '设置'
+    'favorites.footer.openSource': '项目已开源，欢迎🌟Star和反馈',
+    'favorites.footer.settings': '设置',
+    'favorites.archive.title': '归档',
+    'favorites.archive.open': '归档',
+    'favorites.archive.back': '收藏列表',
+    'favorites.archive.newFolder': '新建文件夹',
+    'favorites.archive.newSubfolder': '新建子文件夹',
+    'favorites.archive.rename': '重命名',
+    'favorites.archive.deleteFolder': '删除文件夹',
+    'favorites.archive.import': '导入',
+    'favorites.archive.importTo': '导入到文件夹',
+    'favorites.archive.noFolders': '暂无文件夹（先新建一个吧）',
+    'favorites.archive.noImportable': '暂无可导入链接',
+    'favorites.archive.addToFolder': '加入文件夹',
+    'favorites.archive.removeFromFolder': '移出文件夹',
+    'favorites.archive.missingLink': '链接已不存在（已从收藏移除）',
+    'favorites.archive.folderDeleteConfirm': '确定删除该文件夹及其内容吗？',
+    'favorites.archive.folderNamePlaceholder': '输入文件夹名称',
+    'favorites.archive.close': '关闭'
   },
   'en': {
     // Options Page
@@ -130,8 +147,25 @@ export const messages = {
     'favorites.confirmDelete': 'Are you sure you want to delete this?',
     'favorites.cancel': 'Cancel',
     'favorites.confirm': 'Confirm',
-    'favorites.footer.openSource': 'Welcome to 🌟Star and feedback:',
-    'favorites.footer.settings': 'Settings'
+    'favorites.footer.openSource': 'Open source — 🌟Star & feedback',
+    'favorites.footer.settings': 'Settings',
+    'favorites.archive.title': 'Archive',
+    'favorites.archive.open': 'Archive',
+    'favorites.archive.back': 'Favorites',
+    'favorites.archive.newFolder': 'New folder',
+    'favorites.archive.newSubfolder': 'New subfolder',
+    'favorites.archive.rename': 'Rename',
+    'favorites.archive.deleteFolder': 'Delete folder',
+    'favorites.archive.import': 'Import',
+    'favorites.archive.importTo': 'Import to folder',
+    'favorites.archive.noFolders': 'No folders yet',
+    'favorites.archive.noImportable': 'No importable links',
+    'favorites.archive.addToFolder': 'Add to folder',
+    'favorites.archive.removeFromFolder': 'Remove from folder',
+    'favorites.archive.missingLink': 'Link missing (removed from favorites)',
+    'favorites.archive.folderDeleteConfirm': 'Delete this folder and all its contents?',
+    'favorites.archive.folderNamePlaceholder': 'Folder name',
+    'favorites.archive.close': 'Close'
   }
 };
 
