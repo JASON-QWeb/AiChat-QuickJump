@@ -18,10 +18,10 @@ import {
 } from '../store/favoriteArchiveStore';
 import { themes, resolveTheme, type ThemeMode, type TimelineTheme } from './themes';
 import { getTranslation, getSystemLanguage, type Language } from '../../utils/i18n';
-import { 
-  ChristmasThemeEffects, 
-  SciFiThemeEffects, 
-  injectThemeAnimationStyles 
+import {
+  ChristmasThemeEffects,
+  SciFiThemeEffects,
+  injectThemeAnimationStyles
 } from './themeEffects';
 
 /**
@@ -44,7 +44,7 @@ export class RightSideTimelinejump {
   private resizeObserver: ResizeObserver | null = null;
   private conversationId: string | null = null;
   private pinnedNodes: Set<string> = new Set();
-  
+
   // 收藏功能相关
   private topStarButton: HTMLElement | null = null;
   private bottomStarsButton: HTMLElement | null = null;
@@ -69,15 +69,15 @@ export class RightSideTimelinejump {
 
   private readonly NODE_PADDING = 30;
   private readonly MIN_NODE_GAP = 28;
-  
+
   // 当前主题
   private currentTheme: TimelineTheme = themes.light;
   private currentThemeMode: ThemeMode = 'auto';
-  
+
   // 特殊主题效果管理器
   private christmasEffects: ChristmasThemeEffects | null = null;
   private scifiEffects: SciFiThemeEffects | null = null;
-  
+
   // 防止 ResizeObserver 无限循环的标志
   private isUpdatingPositions: boolean = false;
 
@@ -106,12 +106,12 @@ export class RightSideTimelinejump {
   constructor() {
     // 注入主题动画样式
     injectThemeAnimationStyles();
-    
+
     // 确保主题已初始化
     const savedTheme = localStorage.getItem('llm_nav_theme_cache');
     if (savedTheme && themes[savedTheme]) {
-       this.currentTheme = themes[savedTheme];
-       this.currentThemeMode = savedTheme as ThemeMode;
+      this.currentTheme = themes[savedTheme];
+      this.currentThemeMode = savedTheme as ThemeMode;
     }
 
     this.container = this.createContainer();
@@ -131,7 +131,7 @@ export class RightSideTimelinejump {
 
     this.createSlider();
     this.nodesWrapper.addEventListener('scroll', this.handleWrapperScroll, { passive: true });
-    
+
     // 监听容器大小变化
     this.resizeObserver = new ResizeObserver(() => {
       // 防止递归触发
@@ -157,13 +157,13 @@ export class RightSideTimelinejump {
     this.currentThemeMode = mode;
     // 缓存主题，防止构造函数加载时闪烁
     localStorage.setItem('llm_nav_theme_cache', themeType);
-    
+
     // 清理之前的特殊主题效果
     this.cleanupThemeEffects();
-    
+
     // 根据主题类型应用不同的效果
     const themeTypeFlag = this.currentTheme.themeType;
-    
+
     if (themeTypeFlag === 'christmas') {
       this.applyChristmasTheme();
     } else if (themeTypeFlag === 'scifi') {
@@ -188,13 +188,13 @@ export class RightSideTimelinejump {
     this.nodes.forEach((node, index) => {
       this.updateNodeStyle(node, index);
     });
-    
+
     // 更新星星按钮样式
     this.updateTopStarStyle();
     this.updateBottomStarsStyle();
     void this.refreshFavoritesModalIfOpen();
   }
-  
+
   /**
    * 清理之前的特殊主题效果
    */
@@ -207,11 +207,11 @@ export class RightSideTimelinejump {
       this.scifiEffects.destroy();
       this.scifiEffects = null;
     }
-    
+
     // 移除主题相关的类名
     this.tooltip.classList.remove('christmas-tooltip', 'scifi-tooltip');
   }
-  
+
   /**
    * 应用圣诞主题
    */
@@ -219,7 +219,7 @@ export class RightSideTimelinejump {
     // 初始化圣诞特效
     this.christmasEffects = new ChristmasThemeEffects(this.container);
     this.christmasEffects.init();
-    
+
     // 应用灯条树干样式
     const barStyle = ChristmasThemeEffects.getTimelineBarStyle();
     this.timelineBar.style.cssText = `
@@ -232,11 +232,11 @@ export class RightSideTimelinejump {
       transition: background-color 0.3s ease;
       ${barStyle}
     `;
-    
+
     // Tooltip 添加圣诞类名
     this.tooltip.classList.add('christmas-tooltip');
   }
-  
+
   /**
    * 应用科幻主题
    */
@@ -244,7 +244,7 @@ export class RightSideTimelinejump {
     // 初始化科幻特效
     this.scifiEffects = new SciFiThemeEffects(this.container);
     this.scifiEffects.init();
-    
+
     // 应用流体树干样式
     const barStyle = SciFiThemeEffects.getTimelineBarStyle();
     this.timelineBar.style.cssText = `
@@ -257,11 +257,11 @@ export class RightSideTimelinejump {
       transition: background-color 0.3s ease;
       ${barStyle}
     `;
-    
+
     // Tooltip 添加科幻类名
     this.tooltip.classList.add('scifi-tooltip');
   }
-  
+
   /**
    * 应用普通主题
    */
@@ -280,13 +280,13 @@ export class RightSideTimelinejump {
       transition: 'background-color 0.3s ease'
     });
   }
-  
+
   /**
    * 更新 Tooltip 主题样式
    */
   private updateTooltipTheme(): void {
     const themeTypeFlag = this.currentTheme.themeType;
-    
+
     if (themeTypeFlag === 'christmas') {
       this.tooltip.style.backgroundColor = '#FFFAF0';
       this.tooltip.style.color = '#8B4513';
@@ -309,20 +309,20 @@ export class RightSideTimelinejump {
     this.conversationId = id;
     this.currentUrl = window.location.href;
     this.pinnedNodes = await PinnedStore.loadPinned(id);
-    
+
     // 检查是否已收藏，或者有被标记的节点（自动点亮）
     const isExplicitlyFavorited = await FavoriteStore.isFavorited(id);
     const hasPinnedNodes = this.pinnedNodes.size > 0;
     this.isFavorited = isExplicitlyFavorited || hasPinnedNodes;
-    
+
     // 如果有标记节点但未收藏，自动创建收藏
     if (hasPinnedNodes && !isExplicitlyFavorited) {
       // 延迟自动收藏，等待 items 加载完成
       setTimeout(() => this.autoFavoriteIfNeeded(), 500);
     }
-    
+
     this.updateTopStarStyle();
-    
+
     // 重新应用样式
     this.nodes.forEach((node, index) => {
       this.updateNodeStyle(node, index);
@@ -334,10 +334,10 @@ export class RightSideTimelinejump {
    */
   private async autoFavoriteIfNeeded(): Promise<void> {
     if (!this.conversationId || this.items.length === 0) return;
-    
+
     const isExplicitlyFavorited = await FavoriteStore.isFavorited(this.conversationId);
     if (isExplicitlyFavorited) return;
-    
+
     if (this.pinnedNodes.size > 0) {
       const pinnedItems: Array<{ index: number; promptText: string }> = [];
       this.pinnedNodes.forEach(nodeId => {
@@ -349,7 +349,7 @@ export class RightSideTimelinejump {
           });
         }
       });
-      
+
       if (pinnedItems.length > 0) {
         const chatTitle = this.items.length > 0 ? this.items[0].promptText : this.t('favorites.unnamed');
         await FavoriteStore.favoriteConversation(
@@ -397,7 +397,7 @@ export class RightSideTimelinejump {
   private createTopStarButton(): void {
     const button = document.createElement('div');
     button.className = 'timeline-top-star';
-    
+
     Object.assign(button.style, {
       position: 'absolute',
       top: '-30px',
@@ -414,22 +414,22 @@ export class RightSideTimelinejump {
       transition: 'all 0.2s ease',
       zIndex: '10'
     });
-    
+
     button.innerHTML = '☆'; // 空心星星
     button.title = this.t('favorites.add');
-    
+
     button.addEventListener('mouseenter', () => {
       button.style.opacity = '1';
       button.style.transform = 'translateX(-50%) scale(1.2)';
     });
-    
+
     button.addEventListener('mouseleave', () => {
       button.style.opacity = this.isFavorited ? '1' : '0.5';
       button.style.transform = 'translateX(-50%) scale(1)';
     });
-    
+
     button.addEventListener('click', () => this.handleFavoriteClick());
-    
+
     this.container.appendChild(button);
     this.topStarButton = button;
   }
@@ -440,7 +440,7 @@ export class RightSideTimelinejump {
   private createBottomStarsButton(): void {
     const button = document.createElement('div');
     button.className = 'timeline-bottom-stars';
-    
+
     Object.assign(button.style, {
       position: 'absolute',
       bottom: '-35px',
@@ -458,7 +458,7 @@ export class RightSideTimelinejump {
       zIndex: '10',
       color: this.currentTheme.pinnedColor // 跟随主题颜色
     });
-    
+
     // 三星重叠效果
     button.innerHTML = `
       <span style="position: relative;">
@@ -468,17 +468,17 @@ export class RightSideTimelinejump {
       </span>
     `;
     button.title = this.t('favorites.viewAll');
-    
+
     button.addEventListener('mouseenter', () => {
       button.style.transform = 'translateX(-50%) scale(1.2)';
     });
-    
+
     button.addEventListener('mouseleave', () => {
       button.style.transform = 'translateX(-50%) scale(1)';
     });
-    
+
     button.addEventListener('click', () => this.showFavoritesModal());
-    
+
     this.container.appendChild(button);
     this.bottomStarsButton = button;
   }
@@ -488,15 +488,15 @@ export class RightSideTimelinejump {
    */
   private updateBottomStarsStyle(): void {
     if (!this.bottomStarsButton) return;
-    
+
     const themeTypeFlag = this.currentTheme.themeType;
-    
+
     // 首先彻底清除所有内容，防止重复元素
     while (this.bottomStarsButton.firstChild) {
       this.bottomStarsButton.removeChild(this.bottomStarsButton.firstChild);
     }
     this.bottomStarsButton.innerHTML = '';
-    
+
     if (themeTypeFlag === 'christmas') {
       // 圣诞主题：礼物图片
       this.bottomStarsButton.innerHTML = ChristmasThemeEffects.createBottomGifts();
@@ -530,9 +530,9 @@ export class RightSideTimelinejump {
    */
   private async handleFavoriteClick(): Promise<void> {
     if (!this.conversationId) return;
-    
+
     this.currentUrl = window.location.href;
-    
+
     if (this.isFavorited) {
       // 取消收藏
       await FavoriteStore.unfavoriteConversation(this.conversationId);
@@ -541,7 +541,7 @@ export class RightSideTimelinejump {
       // 收藏当前对话
       // 收集所有被标记的节点
       const pinnedItems: Array<{ index: number; promptText: string }> = [];
-      
+
       this.pinnedNodes.forEach(nodeId => {
         const index = parseInt(nodeId);
         if (this.items[index]) {
@@ -551,7 +551,7 @@ export class RightSideTimelinejump {
           });
         }
       });
-      
+
       // 如果没有标记的节点，收藏整个对话（使用第一个节点作为代表）
       if (pinnedItems.length === 0 && this.items.length > 0) {
         pinnedItems.push({
@@ -559,10 +559,10 @@ export class RightSideTimelinejump {
           promptText: this.items[0].promptText
         });
       }
-      
+
       // 获取整个对话的标题（使用第一个问题的文本）
       const chatTitle = this.items.length > 0 ? this.items[0].promptText : this.t('favorites.unnamed');
-      
+
       await FavoriteStore.favoriteConversation(
         this.conversationId,
         this.currentUrl,
@@ -572,9 +572,9 @@ export class RightSideTimelinejump {
       );
       this.isFavorited = true;
     }
-    
+
     this.updateTopStarStyle();
-    
+
     // 添加跳跃动画反馈
     this.playStarBounceAnimation();
   }
@@ -584,23 +584,23 @@ export class RightSideTimelinejump {
    */
   private playStarBounceAnimation(): void {
     if (!this.topStarButton) return;
-    
+
     // 添加跳跃动画
     this.topStarButton.style.transition = 'transform 0.1s ease-out';
     this.topStarButton.style.transform = 'translateX(-50%) scale(1.4) translateY(-8px)';
-    
+
     setTimeout(() => {
       if (this.topStarButton) {
         this.topStarButton.style.transform = 'translateX(-50%) scale(0.9) translateY(2px)';
       }
     }, 100);
-    
+
     setTimeout(() => {
       if (this.topStarButton) {
         this.topStarButton.style.transform = 'translateX(-50%) scale(1.1) translateY(-3px)';
       }
     }, 200);
-    
+
     setTimeout(() => {
       if (this.topStarButton) {
         this.topStarButton.style.transform = 'translateX(-50%) scale(1)';
@@ -615,10 +615,10 @@ export class RightSideTimelinejump {
    */
   async syncPinnedToFavorites(): Promise<void> {
     if (!this.conversationId) return;
-    
+
     // 收集当前所有被标记的节点
     const pinnedItems: Array<{ index: number; promptText: string }> = [];
-    
+
     this.pinnedNodes.forEach(nodeId => {
       const index = parseInt(nodeId);
       if (this.items[index]) {
@@ -628,12 +628,12 @@ export class RightSideTimelinejump {
         });
       }
     });
-    
+
     // 如果有标记的节点但尚未收藏，自动创建收藏
     if (pinnedItems.length > 0 && !this.isFavorited) {
       this.currentUrl = window.location.href;
       const chatTitle = this.items.length > 0 ? this.items[0].promptText : this.t('favorites.unnamed');
-      
+
       await FavoriteStore.favoriteConversation(
         this.conversationId,
         this.currentUrl,
@@ -646,7 +646,7 @@ export class RightSideTimelinejump {
       this.playStarBounceAnimation();
       return;
     }
-    
+
     // 如果已收藏，更新收藏的子项
     if (this.isFavorited) {
       // 如果没有标记的节点了，保留第一个节点作为代表
@@ -665,9 +665,9 @@ export class RightSideTimelinejump {
    */
   private updateTopStarStyle(): void {
     if (!this.topStarButton) return;
-    
+
     const themeTypeFlag = this.currentTheme.themeType;
-    
+
     if (themeTypeFlag === 'christmas') {
       // 圣诞主题：梦幻模糊星星，根据收藏状态显示不同亮度
       this.topStarButton.innerHTML = ChristmasThemeEffects.createTopStar(this.isFavorited);
@@ -690,7 +690,7 @@ export class RightSideTimelinejump {
         this.topStarButton.style.opacity = '0.5';
       }
     }
-    
+
     this.topStarButton.title = this.isFavorited ? this.t('favorites.remove') : this.t('favorites.add');
   }
 
@@ -1362,9 +1362,9 @@ export class RightSideTimelinejump {
         onClick: () => this.closeFavoritesModal()
       });
 
-	    const frontHeader = document.createElement('div');
-	    frontHeader.classList.add('llm-tutorial-favorites-header');
-	    Object.assign(frontHeader.style, {
+    const frontHeader = document.createElement('div');
+    frontHeader.classList.add('llm-tutorial-favorites-header');
+    Object.assign(frontHeader.style, {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
@@ -1384,12 +1384,12 @@ export class RightSideTimelinejump {
     frontTitle.textContent = this.t('favorites.list');
     Object.assign(frontTitle.style, { margin: '0', fontSize: '16px', fontWeight: '600' });
 
-	    const flipToArchiveBtn = createIconButton({
-	      title: this.t('favorites.archive.open'),
-	      svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>`,
-	      onClick: async () => setArchiveView(true)
-	    });
-	    flipToArchiveBtn.classList.add('llm-tutorial-flip-archive');
+    const flipToArchiveBtn = createIconButton({
+      title: this.t('favorites.archive.open'),
+      svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>`,
+      onClick: async () => setArchiveView(true)
+    });
+    flipToArchiveBtn.classList.add('llm-tutorial-flip-archive');
 
     frontTitleGroup.appendChild(frontTitle);
     frontTitleGroup.appendChild(flipToArchiveBtn);
@@ -1401,9 +1401,9 @@ export class RightSideTimelinejump {
     frontHeader.appendChild(frontTitleGroup);
     frontHeader.appendChild(frontRight);
 
-	    const frontContent = document.createElement('div');
-	    frontContent.classList.add('llm-tutorial-favorites-content');
-	    Object.assign(frontContent.style, {
+    const frontContent = document.createElement('div');
+    frontContent.classList.add('llm-tutorial-favorites-content');
+    Object.assign(frontContent.style, {
       flex: '1',
       overflowY: 'auto',
       padding: '12px 20px',
@@ -1411,9 +1411,9 @@ export class RightSideTimelinejump {
     });
     renderFavoritesList(frontContent);
 
-	    front.appendChild(frontHeader);
-	    front.appendChild(frontContent);
-	    front.appendChild(this.createFavoritesModalFooter('front'));
+    front.appendChild(frontHeader);
+    front.appendChild(frontContent);
+    front.appendChild(this.createFavoritesModalFooter('front'));
 
     const backHeader = document.createElement('div');
     Object.assign(backHeader.style, {
@@ -1478,9 +1478,9 @@ export class RightSideTimelinejump {
     backContent.appendChild(archiveContent);
     renderArchiveTree();
 
-	    back.appendChild(backHeader);
-	    back.appendChild(backContent);
-	    back.appendChild(this.createFavoritesModalFooter('back'));
+    back.appendChild(backHeader);
+    back.appendChild(backContent);
+    back.appendChild(this.createFavoritesModalFooter('back'));
 
     card.appendChild(front);
     card.appendChild(back);
@@ -1499,18 +1499,18 @@ export class RightSideTimelinejump {
       zIndex: '2147483646'
     });
     overlay.addEventListener('click', () => this.closeFavoritesModal());
-    
-	    document.body.appendChild(overlay);
-	    document.body.appendChild(modal);
-	    this.favoritesModal = modal;
-	    this.maybeContinueTutorialAfterFavoritesModalOpened();
-	    if (initialView === 'back') {
-	      await setArchiveView(true);
-	    }
-	  }
 
-	  private createFavoritesModalFooter(side: 'front' | 'back'): HTMLElement {
-	    const footer = document.createElement('div');
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+    this.favoritesModal = modal;
+    this.maybeContinueTutorialAfterFavoritesModalOpened();
+    if (initialView === 'back') {
+      await setArchiveView(true);
+    }
+  }
+
+  private createFavoritesModalFooter(side: 'front' | 'back'): HTMLElement {
+    const footer = document.createElement('div');
     Object.assign(footer.style, {
       display: 'flex',
       justifyContent: 'space-between',
@@ -1541,10 +1541,10 @@ export class RightSideTimelinejump {
     openSourceLink.addEventListener('mouseenter', () => (openSourceLink.style.opacity = '1'));
     openSourceLink.addEventListener('mouseleave', () => (openSourceLink.style.opacity = '0.8'));
 
-	    const settingsBtn = document.createElement('button');
-	    settingsBtn.classList.add('llm-favorites-settings-btn');
-	    settingsBtn.dataset.tutorialSide = side;
-	    settingsBtn.type = 'button';
+    const settingsBtn = document.createElement('button');
+    settingsBtn.classList.add('llm-favorites-settings-btn');
+    settingsBtn.dataset.tutorialSide = side;
+    settingsBtn.type = 'button';
     settingsBtn.title = this.t('favorites.footer.settings');
     settingsBtn.setAttribute('aria-label', this.t('favorites.footer.settings'));
     settingsBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V22a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 20.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 3.6a1.65 1.65 0 0 0 1-1.51V2a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 20.4 9a1.65 1.65 0 0 0 1.51 1H22a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
@@ -2109,15 +2109,15 @@ export class RightSideTimelinejump {
     const theme = this.currentTheme;
     const item = document.createElement('div');
     item.className = 'favorite-conversation';
-    
+
     // 根据主题计算背景色
-    const itemBgColor = theme.name === '暗色' 
-      ? 'rgba(255,255,255,0.08)' 
+    const itemBgColor = theme.name === '暗色'
+      ? 'rgba(255,255,255,0.08)'
       : 'rgba(0,0,0,0.04)';
-    const itemHoverBgColor = theme.name === '暗色' 
-      ? 'rgba(255,255,255,0.12)' 
+    const itemHoverBgColor = theme.name === '暗色'
+      ? 'rgba(255,255,255,0.12)'
       : 'rgba(0,0,0,0.08)';
-    
+
     Object.assign(item.style, {
       marginBottom: '12px',
       borderRadius: '8px',
@@ -2125,7 +2125,7 @@ export class RightSideTimelinejump {
       overflow: 'hidden',
       border: `1px solid ${theme.timelineBarColor}`
     });
-    
+
     // 对话标题行（可展开）
     const titleRow = document.createElement('div');
     Object.assign(titleRow.style, {
@@ -2136,14 +2136,14 @@ export class RightSideTimelinejump {
       gap: '10px',
       transition: 'background-color 0.2s'
     });
-    
+
     titleRow.addEventListener('mouseenter', () => {
       titleRow.style.backgroundColor = itemHoverBgColor;
     });
     titleRow.addEventListener('mouseleave', () => {
       titleRow.style.backgroundColor = 'transparent';
     });
-    
+
     const expandIcon = document.createElement('span');
     expandIcon.textContent = '▶';
     Object.assign(expandIcon.style, {
@@ -2152,7 +2152,7 @@ export class RightSideTimelinejump {
       opacity: '0.6',
       color: theme.tooltipTextColor
     });
-    
+
     const titleText = document.createElement('span');
     titleText.textContent = conv.title;
     titleText.title = this.t('favorites.clickToOpen');
@@ -2166,13 +2166,13 @@ export class RightSideTimelinejump {
       color: theme.tooltipTextColor,
       cursor: 'pointer'
     });
-    
+
     // 点击标题跳转到对话
     titleText.addEventListener('click', (e) => {
       e.stopPropagation();
       this.navigateToFavorite(conv, conv.items[0]?.nodeIndex || 0);
     });
-    
+
     // 编辑按钮（简笔画铅笔图标）
     const editBtn = document.createElement('button');
     editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
@@ -2195,11 +2195,11 @@ export class RightSideTimelinejump {
     editBtn.addEventListener('mouseleave', () => {
       editBtn.style.opacity = '0.4';
     });
-    
+
     // 编辑标题的函数
     const startEditTitle = (e: Event) => {
       e.stopPropagation();
-      
+
       // 创建输入框替换标题
       const input = document.createElement('input');
       input.type = 'text';
@@ -2216,7 +2216,7 @@ export class RightSideTimelinejump {
         outline: 'none',
         minWidth: '100px'
       });
-      
+
       // 保存编辑
       const saveEdit = async () => {
         const newTitle = input.value.trim();
@@ -2228,12 +2228,12 @@ export class RightSideTimelinejump {
         // 恢复显示
         input.replaceWith(titleText);
       };
-      
+
       // 取消编辑
       const cancelEdit = () => {
         input.replaceWith(titleText);
       };
-      
+
       input.addEventListener('blur', saveEdit);
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -2243,15 +2243,15 @@ export class RightSideTimelinejump {
           cancelEdit();
         }
       });
-      
+
       titleText.replaceWith(input);
       input.focus();
       input.select();
     };
-    
+
     // 点击编辑按钮编辑
     editBtn.addEventListener('click', startEditTitle);
-    
+
     // 删除父项按钮（简笔画垃圾桶图标）
     const deleteBtn = document.createElement('button');
     deleteBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
@@ -2287,7 +2287,7 @@ export class RightSideTimelinejump {
         }
       }
     });
-    
+
     // 网站图标
     const siteIcon = document.createElement('img');
     const iconUrl = this.getSiteIconUrl(conv.siteName);
@@ -2315,29 +2315,29 @@ export class RightSideTimelinejump {
       });
       siteIcon.replaceWith(textTag);
     };
-    
+
     titleRow.appendChild(expandIcon);
     titleRow.appendChild(titleText);
     titleRow.appendChild(editBtn);
     titleRow.appendChild(deleteBtn);
     titleRow.appendChild(siteIcon);
-    
+
     // 子项容器（默认隐藏）
     const subItems = document.createElement('div');
     Object.assign(subItems.style, {
       display: 'none',
       padding: '0 14px 14px 32px'
     });
-    
+
     conv.items.forEach(subItem => {
       const subItemEl = document.createElement('div');
-      const subItemBgColor = theme.name === '暗色' 
-        ? 'rgba(255,255,255,0.05)' 
+      const subItemBgColor = theme.name === '暗色'
+        ? 'rgba(255,255,255,0.05)'
         : 'rgba(0,0,0,0.03)';
-      const subItemHoverBgColor = theme.name === '暗色' 
-        ? 'rgba(255,255,255,0.1)' 
+      const subItemHoverBgColor = theme.name === '暗色'
+        ? 'rgba(255,255,255,0.1)'
         : 'rgba(0,0,0,0.06)';
-      
+
       Object.assign(subItemEl.style, {
         display: 'flex',
         alignItems: 'center',
@@ -2352,7 +2352,7 @@ export class RightSideTimelinejump {
         color: theme.tooltipTextColor,
         borderLeft: `3px solid ${theme.pinnedColor}`
       });
-      
+
       // 文本内容
       const textSpan = document.createElement('span');
       Object.assign(textSpan.style, {
@@ -2363,11 +2363,11 @@ export class RightSideTimelinejump {
         cursor: 'pointer'
       });
       // 截取文本，确保一行显示
-      const displayText = subItem.promptText.length > 50 
+      const displayText = subItem.promptText.length > 50
         ? subItem.promptText.substring(0, 50) + '...'
         : subItem.promptText;
       textSpan.textContent = displayText;
-      
+
       // 删除子项按钮（简笔画 X 图标）
       const subDeleteBtn = document.createElement('button');
       subDeleteBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
@@ -2400,10 +2400,10 @@ export class RightSideTimelinejump {
           // 删除所有子项后父项依然保留，用户可以点击父项跳转到对话
         }
       });
-      
+
       subItemEl.appendChild(textSpan);
       subItemEl.appendChild(subDeleteBtn);
-      
+
       subItemEl.addEventListener('mouseenter', () => {
         subItemEl.style.backgroundColor = subItemHoverBgColor;
         subItemEl.style.transform = 'translateX(4px)';
@@ -2412,16 +2412,16 @@ export class RightSideTimelinejump {
         subItemEl.style.backgroundColor = subItemBgColor;
         subItemEl.style.transform = 'translateX(0)';
       });
-      
+
       // 点击文本部分跳转
       textSpan.addEventListener('click', (e) => {
         e.stopPropagation();
         this.navigateToFavorite(conv, subItem.nodeIndex);
       });
-      
+
       subItems.appendChild(subItemEl);
     });
-    
+
     // 展开/折叠逻辑 - 只有点击展开图标才触发
     let isExpanded = false;
     expandIcon.style.cursor = 'pointer';
@@ -2431,10 +2431,10 @@ export class RightSideTimelinejump {
       subItems.style.display = isExpanded ? 'block' : 'none';
       expandIcon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
     });
-    
+
     item.appendChild(titleRow);
     item.appendChild(subItems);
-    
+
     return item;
   }
 
@@ -2444,11 +2444,11 @@ export class RightSideTimelinejump {
   private navigateToFavorite(conv: FavoriteConversation, nodeIndex: number): void {
     const currentUrl = window.location.href;
     const targetUrl = conv.url;
-    
+
     // 如果是当前页面，直接跳转到节点
     if (currentUrl === targetUrl || this.conversationId === conv.conversationId) {
       this.closeFavoritesModal();
-      
+
       // 触发点击回调跳转到指定节点
       if (this.onClickCallback) {
         this.onClickCallback(nodeIndex);
@@ -2478,7 +2478,7 @@ export class RightSideTimelinejump {
       this.favoritesModal.remove();
       this.favoritesModal = null;
     }
-    
+
     // 移除遮罩层
     const overlay = document.querySelector('.llm-favorites-overlay');
     if (overlay) {
@@ -2495,7 +2495,7 @@ export class RightSideTimelinejump {
   private showConfirmDialog(message: string): Promise<boolean> {
     return new Promise((resolve) => {
       const theme = this.currentTheme;
-      
+
       // 创建遮罩层
       const overlay = document.createElement('div');
       Object.assign(overlay.style, {
@@ -2510,7 +2510,7 @@ export class RightSideTimelinejump {
         alignItems: 'center',
         justifyContent: 'center'
       });
-      
+
       // 创建对话框
       const dialog = document.createElement('div');
       Object.assign(dialog.style, {
@@ -2522,7 +2522,7 @@ export class RightSideTimelinejump {
         maxWidth: '320px',
         textAlign: 'center'
       });
-      
+
       // 消息文本
       const msgEl = document.createElement('p');
       msgEl.textContent = message;
@@ -2531,7 +2531,7 @@ export class RightSideTimelinejump {
         fontSize: '14px',
         lineHeight: '1.5'
       });
-      
+
       // 按钮容器
       const btnContainer = document.createElement('div');
       Object.assign(btnContainer.style, {
@@ -2539,7 +2539,7 @@ export class RightSideTimelinejump {
         gap: '12px',
         justifyContent: 'center'
       });
-      
+
       // 取消按钮
       const cancelBtn = document.createElement('button');
       cancelBtn.textContent = this.t('favorites.cancel');
@@ -2554,14 +2554,14 @@ export class RightSideTimelinejump {
         transition: 'all 0.2s'
       });
       cancelBtn.addEventListener('mouseenter', () => {
-        cancelBtn.style.backgroundColor = theme.name === '暗色' 
-          ? 'rgba(255,255,255,0.1)' 
+        cancelBtn.style.backgroundColor = theme.name === '暗色'
+          ? 'rgba(255,255,255,0.1)'
           : 'rgba(0,0,0,0.05)';
       });
       cancelBtn.addEventListener('mouseleave', () => {
         cancelBtn.style.backgroundColor = 'transparent';
       });
-      
+
       // 确认按钮
       const confirmBtn = document.createElement('button');
       confirmBtn.textContent = this.t('favorites.confirm');
@@ -2581,26 +2581,26 @@ export class RightSideTimelinejump {
       confirmBtn.addEventListener('mouseleave', () => {
         confirmBtn.style.backgroundColor = '#e53935';
       });
-      
+
       // 关闭对话框
       const closeDialog = (result: boolean) => {
         overlay.remove();
         resolve(result);
       };
-      
+
       cancelBtn.addEventListener('click', () => closeDialog(false));
       confirmBtn.addEventListener('click', () => closeDialog(true));
       overlay.addEventListener('click', (e) => {
         if (e.target === overlay) closeDialog(false);
       });
-      
+
       btnContainer.appendChild(cancelBtn);
       btnContainer.appendChild(confirmBtn);
       dialog.appendChild(msgEl);
       dialog.appendChild(btnContainer);
       overlay.appendChild(dialog);
       document.body.appendChild(overlay);
-      
+
       // 聚焦确认按钮
       confirmBtn.focus();
     });
@@ -2758,7 +2758,7 @@ export class RightSideTimelinejump {
   private createContainer(): HTMLElement {
     const container = document.createElement('div');
     container.id = 'llm-timeline-jump';
-    
+
     // 样式
     Object.assign(container.style, {
       position: 'fixed',
@@ -2785,7 +2785,7 @@ export class RightSideTimelinejump {
   private createTimelineBar(): HTMLElement {
     const bar = document.createElement('div');
     bar.className = 'timeline-bar';
-    
+
     Object.assign(bar.style, {
       position: 'absolute',
       left: '50%',
@@ -2848,8 +2848,7 @@ export class RightSideTimelinejump {
   private createTooltip(): HTMLElement {
     const tooltip = document.createElement('div');
     tooltip.id = 'llm-timeline-tooltip';
-    tooltip.style.display = 'none';
-    
+
     Object.assign(tooltip.style, {
       position: 'fixed',
       maxWidth: '200px', // 缩窄宽度
@@ -2864,8 +2863,9 @@ export class RightSideTimelinejump {
       pointerEvents: 'none',
       wordWrap: 'break-word',
       whiteSpace: 'pre-wrap',
-      // 限制显示两行
       display: '-webkit-box',
+      visibility: 'hidden',
+      // 限制显示两行
       webkitLineClamp: '2',
       webkitBoxOrient: 'vertical',
       overflow: 'hidden'
@@ -2882,8 +2882,12 @@ export class RightSideTimelinejump {
     const index = nodeElement.dataset.index;
     const isPinned = index && this.pinnedNodes.has(index);
 
-    // 截断文本（最多 80 字符）
-    const displayText = text.length > 80 ? text.substring(0, 80) + '...' : text;
+    // 截断文本（最多 50 字符）
+    const displayText = this.truncateTooltipText(text, 50);
+    if (!displayText) {
+      this.hideTooltip();
+      return;
+    }
 
     // 如果被标记，添加带主题颜色的星星
     if (isPinned) {
@@ -2891,7 +2895,7 @@ export class RightSideTimelinejump {
     } else {
       this.tooltip.textContent = displayText;
     }
-    this.tooltip.style.display = 'block';
+    this.tooltip.style.visibility = 'visible';
 
     // 计算位置（显示在节点左侧）
     const rect = nodeElement.getBoundingClientRect();
@@ -2920,7 +2924,13 @@ export class RightSideTimelinejump {
    * 隐藏 tooltip
    */
   private hideTooltip(): void {
-    this.tooltip.style.display = 'none';
+    this.tooltip.style.visibility = 'hidden';
+  }
+
+  private truncateTooltipText(text: string, maxChars: number): string {
+    const chars = Array.from(text);
+    if (chars.length <= maxChars) return text;
+    return chars.slice(0, maxChars).join('') + '...';
   }
 
   /**
@@ -2946,7 +2956,7 @@ export class RightSideTimelinejump {
       'Qwen': 'icons/qwen.png',
       '豆包': 'icons/豆包icon.png'
     };
-    
+
     const iconPath = iconMap[siteName] || 'icons/icon48.svg';
     return chrome.runtime.getURL(iconPath);
   }
@@ -2958,13 +2968,13 @@ export class RightSideTimelinejump {
     const isActive = index === this.activeIndex;
     const isPinned = this.pinnedNodes.has(String(index));
     const themeTypeFlag = this.currentTheme.themeType;
-    
+
     // 首先彻底清理节点的所有特殊样式和元素
     this.cleanNodeStyles(node);
-    
+
     // 基础样式
     node.style.transition = 'all 0.2s ease';
-    
+
     // 根据主题类型应用不同的节点样式
     if (themeTypeFlag === 'christmas') {
       this.applyChristmasNodeStyle(node, isActive, isPinned);
@@ -2974,34 +2984,34 @@ export class RightSideTimelinejump {
       this.applyNormalNodeStyle(node, isActive, isPinned);
     }
   }
-  
+
   /**
    * 清理节点的特殊主题样式和子元素（保留核心位置属性）
    */
   private cleanNodeStyles(node: HTMLElement): void {
     // 保留节点的 top 位置
     const savedTop = node.style.top;
-    
+
     // 移除所有特殊主题的子元素
     node.querySelectorAll('.scifi-outer-ring, .scifi-inner-ring, .scifi-center, .scifi-ring, .scifi-crosshair').forEach(el => el.remove());
-    
+
     // 移除所有主题相关的类名
     node.classList.remove(
       'christmas-node-sphere', 'christmas-node-default', 'christmas-node-active', 'christmas-node-pinned', 'christmas-node-pinned-active',
       'scifi-dual-ring', 'scifi-single-ring'
     );
-    
+
     // 只重置样式属性，不改变核心定位
     node.style.animation = '';
     node.style.background = '';
     node.style.boxShadow = '';
-    
+
     // 恢复 top 位置
     if (savedTop) {
       node.style.top = savedTop;
     }
   }
-  
+
   /**
    * 应用圣诞主题节点样式 - 立体圆球效果
    * 修复：标记的 node 点击时显示标记颜色（红色更亮）
@@ -3009,7 +3019,7 @@ export class RightSideTimelinejump {
   private applyChristmasNodeStyle(node: HTMLElement, isActive: boolean, isPinned: boolean): void {
     // 添加圣诞主题类名
     node.classList.add('christmas-node-sphere');
-    
+
     // 基础变换和层级
     if (isActive && isPinned) {
       // 标记且激活 - 红色更亮更大
@@ -3029,12 +3039,12 @@ export class RightSideTimelinejump {
       node.style.zIndex = '1';
       node.classList.add('christmas-node-default');
     }
-    
+
     // 清除溢出限制以显示阴影
     node.style.overflow = 'visible';
     node.style.border = 'none';
   }
-  
+
   /**
    * 应用科幻主题节点样式 - 瞄准图案
    * 使用科技蓝色 (#00A8FF)，标记时红色
@@ -3045,16 +3055,16 @@ export class RightSideTimelinejump {
     const techBlue = '#00A8FF';
     const color = isPinned ? '#FF4444' : techBlue;
     const glowColor = isPinned ? 'rgba(255, 68, 68, 0.6)' : 'rgba(0, 168, 255, 0.6)';
-    
+
     // 添加科幻主题类名
     node.classList.add('scifi-single-ring');
-    
+
     // 清除默认背景样式
     node.style.backgroundColor = 'transparent';
     node.style.border = 'none';
     node.style.boxShadow = 'none';
     node.style.overflow = 'visible';
-    
+
     // 基础变换 - 按住时放大效果更明显
     if (isActive && isPinned) {
       node.style.transform = 'translate(-50%, -50%) scale(2.0)';
@@ -3069,7 +3079,7 @@ export class RightSideTimelinejump {
       node.style.transform = 'translate(-50%, -50%) scale(1.2)';
       node.style.zIndex = '1';
     }
-    
+
     // 创建瞄准图案容器 - 放大SVG
     const crosshair = document.createElement('div');
     crosshair.className = 'scifi-crosshair';
@@ -3081,12 +3091,12 @@ export class RightSideTimelinejump {
       top: '-25%',
       left: '-25%'
     });
-    
+
     // 根据状态设置动画 - 按住时旋转更快
     const shouldRotate = isActive || isPinned;
     const rotateSpeed = isActive ? '1.5s' : '3s';
     const glowIntensity = isActive ? '10px' : (isPinned ? '8px' : '5px');
-    
+
     crosshair.innerHTML = `
       <svg width="100%" height="100%" viewBox="0 0 100 100" style="filter: drop-shadow(0 0 ${glowIntensity} ${glowColor}); ${shouldRotate ? `animation: scifiRingRotate ${rotateSpeed} linear infinite;` : ''}">
         <circle cx="50" cy="50" r="42" fill="none" stroke="${color}" stroke-width="2.5"/>
@@ -3098,24 +3108,24 @@ export class RightSideTimelinejump {
         <line x1="82" y1="50" x2="97" y2="50" stroke="${color}" stroke-width="2.5"/>
       </svg>
     `;
-    
+
     node.appendChild(crosshair);
   }
-  
+
   /**
    * 应用普通主题节点样式
    */
   private applyNormalNodeStyle(node: HTMLElement, isActive: boolean, isPinned: boolean): void {
     // 恢复标准节点外观
     node.style.overflow = 'hidden';
-    
+
     if (isActive) {
       // 激活状态
       node.style.transform = 'translate(-50%, -50%) scale(1.4)';
       node.style.zIndex = '10';
       node.style.boxShadow = `0 0 10px ${this.currentTheme.activeShadow}`;
       node.style.border = '3px solid #fff';
-      
+
       if (isPinned) {
         node.style.backgroundColor = this.currentTheme.pinnedColor;
       } else {
@@ -3127,7 +3137,7 @@ export class RightSideTimelinejump {
       node.style.zIndex = '1';
       node.style.boxShadow = 'none';
       node.style.border = '2px solid #fff';
-      
+
       if (isPinned) {
         node.style.backgroundColor = this.currentTheme.pinnedColor;
         node.style.transform = 'translate(-50%, -50%) scale(1.2)';
@@ -3145,7 +3155,7 @@ export class RightSideTimelinejump {
     const node = document.createElement('div');
     node.className = 'timeline-node';
     node.dataset.index = String(index);
-    
+
     // 初始样式
     Object.assign(node.style, {
       position: 'absolute',
@@ -3158,7 +3168,7 @@ export class RightSideTimelinejump {
       pointerEvents: 'auto',
       overflow: 'hidden', // 确保内部填充层不溢出
     });
-    
+
     // 填充层（用于长按动画）
     const fillLayer = document.createElement('div');
     fillLayer.className = 'fill-layer';
@@ -3176,7 +3186,7 @@ export class RightSideTimelinejump {
       zIndex: '0'
     });
     node.appendChild(fillLayer);
-    
+
     this.updateNodeStyle(node, index);
 
     // 长按相关变量
@@ -3185,7 +3195,7 @@ export class RightSideTimelinejump {
 
     const startPress = () => {
       isLongPress = false;
-      
+
       // 判断是标记还是取消标记，设置不同的填充色
       const isAlreadyPinned = this.pinnedNodes.has(String(index));
       if (isAlreadyPinned) {
@@ -3195,35 +3205,35 @@ export class RightSideTimelinejump {
         // 标记：使用主题定义的重点色填充
         fillLayer.style.backgroundColor = this.currentTheme.pinnedColor;
       }
-      
+
       // 开始动画：慢慢变大
       fillLayer.style.transition = 'transform 500ms linear';
       fillLayer.style.transform = 'scale(1)';
-      
+
       pressTimer = setTimeout(async () => {
         isLongPress = true;
-        
+
         if (this.conversationId) {
           const nodeId = String(index);
           const newPinnedState = await PinnedStore.togglePinned(this.conversationId, nodeId);
-          
+
           if (newPinnedState) {
             this.pinnedNodes.add(nodeId);
           } else {
             this.pinnedNodes.delete(nodeId);
           }
-          
+
           this.updateNodeStyle(node, index);
-          
+
           // 同步到收藏
           this.syncPinnedToFavorites();
-          
+
           // 震动反馈 (如果支持)
           if (navigator.vibrate) {
-            try { navigator.vibrate(50); } catch (e) {}
+            try { navigator.vibrate(50); } catch (e) { }
           }
         }
-        
+
         // 无论结果如何，重置填充层（因为状态改变后 updateNodeStyle 会处理背景色）
         // 但为了视觉连贯性，我们让它保持满，直到鼠标松开
       }, 500); // 500ms 长按阈值
@@ -3234,7 +3244,7 @@ export class RightSideTimelinejump {
         clearTimeout(pressTimer);
         pressTimer = null;
       }
-      
+
       // 动画回退
       fillLayer.style.transition = 'transform 200ms ease-out';
       fillLayer.style.transform = 'scale(0)';
@@ -3256,7 +3266,7 @@ export class RightSideTimelinejump {
       if (index !== this.activeIndex) {
         node.style.transform = 'translate(-50%, -50%) scale(1.2)';
       }
-      
+
       // 显示 tooltip
       if (this.items[index]) {
         this.showTooltip(this.items[index].promptText, node);
@@ -3266,7 +3276,7 @@ export class RightSideTimelinejump {
     node.addEventListener('mouseleave', () => {
       // 恢复样式
       this.updateNodeStyle(node, index);
-      
+
       // 隐藏 tooltip
       this.hideTooltip();
     });
@@ -3279,7 +3289,7 @@ export class RightSideTimelinejump {
         e.stopPropagation();
         return;
       }
-      
+
       const clickedIndex = parseInt(node.dataset.index || '0');
       if (this.onClickCallback) {
         this.onClickCallback(clickedIndex);
@@ -3301,13 +3311,13 @@ export class RightSideTimelinejump {
     if (newCount === 0) {
       this.endTutorial();
       // 清空节点
-        this.nodes.forEach(node => node.remove());
-        this.nodes = [];
-        this.nodesWrapper.scrollTop = 0;
-        this.nodesContent.style.height = '100%';
-        this.contentHeight = 0;
-        this.hideSlider();
-        return;
+      this.nodes.forEach(node => node.remove());
+      this.nodes = [];
+      this.nodesWrapper.scrollTop = 0;
+      this.nodesContent.style.height = '100%';
+      this.contentHeight = 0;
+      this.hideSlider();
+      return;
     }
 
     // 1. 如果新数量少于当前数量（例如切换对话），移除多余节点
@@ -3328,14 +3338,14 @@ export class RightSideTimelinejump {
       } else {
         // 创建新节点
         const node = this.createNode(item, index);
-        
+
         // 新节点初始状态：透明、微缩
         node.style.opacity = '0';
         node.style.transform = 'translate(-50%, -50%) scale(0)';
-        
+
         this.nodesContent.appendChild(node);
         this.nodes.push(node);
-        
+
         // 下一帧显示，触发过渡动画
         requestAnimationFrame(() => {
           node.style.opacity = '1';
@@ -3361,7 +3371,7 @@ export class RightSideTimelinejump {
     // 防止递归触发 ResizeObserver
     if (this.isUpdatingPositions) return;
     this.isUpdatingPositions = true;
-    
+
     try {
       const count = this.items.length;
       if (count === 0) return;
@@ -3390,7 +3400,7 @@ export class RightSideTimelinejump {
           const ratio = index / (count - 1);
           topPosition = padding + ratio * usableHeight;
         }
-        
+
         node.style.top = `${topPosition}px`;
       });
     } finally {
@@ -3446,7 +3456,7 @@ export class RightSideTimelinejump {
     if (this.activeIndex >= 0 && this.activeIndex < this.nodes.length) {
       const oldIndex = this.activeIndex;
       // 临时更改 activeIndex 以便 updateNodeStyle 正确判断
-      this.activeIndex = -1; 
+      this.activeIndex = -1;
       this.updateNodeStyle(this.nodes[oldIndex], oldIndex);
     }
 
@@ -3495,28 +3505,28 @@ export class RightSideTimelinejump {
     if (!this.conversationId || this.activeIndex < 0 || this.activeIndex >= this.nodes.length) {
       return;
     }
-    
+
     const index = this.activeIndex;
     const nodeId = String(index);
-    
+
     // 调用 Store 更新状态
     const newPinnedState = await PinnedStore.togglePinned(this.conversationId, nodeId);
-    
+
     if (newPinnedState) {
       this.pinnedNodes.add(nodeId);
     } else {
       this.pinnedNodes.delete(nodeId);
     }
-    
+
     // 更新样式
     this.updateNodeStyle(this.nodes[index], index);
-    
+
     // 同步到收藏
     this.syncPinnedToFavorites();
-    
+
     // 震动反馈
     if (navigator.vibrate) {
-      try { navigator.vibrate(50); } catch (e) {}
+      try { navigator.vibrate(50); } catch (e) { }
     }
   }
 
@@ -3531,10 +3541,10 @@ export class RightSideTimelinejump {
     if (this.nodesWrapper) {
       this.nodesWrapper.removeEventListener('scroll', this.handleWrapperScroll);
     }
-    
+
     // 清理主题效果
     this.cleanupThemeEffects();
-    
+
     this.detachSliderEvents();
     this.slider?.remove();
     this.container.remove();
