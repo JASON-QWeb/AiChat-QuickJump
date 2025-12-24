@@ -1048,9 +1048,27 @@ export class RightSideTimelinejump {
           flex: '1',
           minWidth: '0',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '2px'
+          alignItems: 'center',
+          gap: '8px'
         });
+
+        if (info) {
+          const siteIcon = document.createElement('img');
+          siteIcon.src = this.getSiteIconUrl(info.conv.siteName);
+          siteIcon.alt = info.conv.siteName;
+          siteIcon.title = info.conv.siteName;
+          Object.assign(siteIcon.style, {
+            width: '16px',
+            height: '16px',
+            borderRadius: '3px',
+            flexShrink: '0',
+            objectFit: 'contain'
+          });
+          siteIcon.onerror = () => {
+            siteIcon.remove();
+          };
+          text.appendChild(siteIcon);
+        }
 
         const main = document.createElement('div');
         main.textContent = info
@@ -1061,23 +1079,14 @@ export class RightSideTimelinejump {
         Object.assign(main.style, {
           fontSize: '13px',
           fontWeight: '500',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
-        });
-
-        const sub = document.createElement('div');
-        sub.textContent = info ? `${info.conv.siteName} · ${info.conv.title}` : '';
-        Object.assign(sub.style, {
-          fontSize: '11px',
-          opacity: '0.65',
+          flex: '1',
+          minWidth: '0',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap'
         });
 
         text.appendChild(main);
-        if (sub.textContent) text.appendChild(sub);
 
         const removeBtn = createIconButton({
           title: this.t('favorites.archive.removeFromFolder'),
@@ -1999,7 +2008,7 @@ export class RightSideTimelinejump {
     this.tutorialTimeoutIds.push(
       window.setTimeout(() => {
         if (this.tutorialStep === 3) this.startTutorialStep4();
-      }, 2200)
+      }, 3000)
     );
   }
 
