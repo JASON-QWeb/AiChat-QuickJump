@@ -857,9 +857,25 @@ export class RightSideTimelinejump {
           flex: '1',
           minWidth: '0',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '2px'
+          alignItems: 'center',
+          gap: '8px'
         });
+
+        const siteIcon = document.createElement('img');
+        siteIcon.src = this.getSiteIconUrl(info.conv.siteName);
+        siteIcon.alt = info.conv.siteName;
+        siteIcon.title = info.conv.siteName;
+        Object.assign(siteIcon.style, {
+          width: '16px',
+          height: '16px',
+          borderRadius: '3px',
+          flexShrink: '0',
+          objectFit: 'contain'
+        });
+        siteIcon.onerror = () => {
+          siteIcon.remove();
+        };
+        text.appendChild(siteIcon);
 
         const main = document.createElement('div');
         const displayText =
@@ -868,23 +884,14 @@ export class RightSideTimelinejump {
         Object.assign(main.style, {
           fontSize: '13px',
           fontWeight: '500',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
-        });
-
-        const sub = document.createElement('div');
-        sub.textContent = `${info.conv.siteName} · ${info.conv.title}`;
-        Object.assign(sub.style, {
-          fontSize: '11px',
-          opacity: '0.65',
+          flex: '1',
+          minWidth: '0',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap'
         });
 
         text.appendChild(main);
-        text.appendChild(sub);
 
         const addBtn = createIconButton({
           title: this.t('favorites.archive.addToFolder'),
@@ -1773,6 +1780,8 @@ export class RightSideTimelinejump {
     if (!this.tutorialBubbleActions || !this.tutorialBubblePrompt) return;
     const actions = this.tutorialBubbleActions;
     actions.innerHTML = '';
+    this.tutorialBubblePrompt.textContent = '';
+    this.tutorialBubblePrompt.style.display = 'none';
 
     const baseBtnStyle: Partial<CSSStyleDeclaration> = {
       padding: '6px 10px',

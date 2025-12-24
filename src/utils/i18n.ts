@@ -182,7 +182,7 @@ export const messages = {
     'tutorial.skip': 'Skip',
     'tutorial.skipConfirm': 'Skip the tutorial?',
     'tutorial.step1': 'Hover a node to preview, click to jump, long-press to favorite.\nTry hovering this node to continue.',
-    'tutorial.step2': 'Click at the bottom to open your favorites. Give it a try!',
+    'tutorial.step2': 'Click at the bottom to open your favorites.\nGive it a try!',
     'tutorial.step3': 'This is Favorites: browse your saved items and click one to jump.',
     'tutorial.step4': 'Click here to flip the card into Archive mode.',
     'tutorial.step5': 'Click Settings to change theme, language and site support.'
