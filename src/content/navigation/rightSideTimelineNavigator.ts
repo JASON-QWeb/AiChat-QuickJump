@@ -49,6 +49,7 @@ export class RightSideTimelinejump {
   private topStarButton: HTMLElement | null = null;
   private bottomStarsButton: HTMLElement | null = null;
   private favoritesModal: HTMLElement | null = null;
+  private favoritesModalView: 'front' | 'back' = 'front';
   private isFavorited: boolean = false;
   private siteName: string = '';
   private currentLanguage: Language = 'auto';
@@ -191,6 +192,7 @@ export class RightSideTimelinejump {
     // 更新星星按钮样式
     this.updateTopStarStyle();
     this.updateBottomStarsStyle();
+    void this.refreshFavoritesModalIfOpen();
   }
   
   /**
@@ -375,6 +377,11 @@ export class RightSideTimelinejump {
    */
   setLanguage(lang: Language): void {
     this.currentLanguage = lang;
+    this.updateTopStarStyle();
+    if (this.bottomStarsButton) {
+      this.bottomStarsButton.title = this.t('favorites.viewAll');
+    }
+    void this.refreshFavoritesModalIfOpen();
   }
 
   /**
@@ -688,14 +695,21 @@ export class RightSideTimelinejump {
   }
 
   /**
+   * 刷新收藏弹窗（保持当前视图）
+   */
+  private async refreshFavoritesModalIfOpen(): Promise<void> {
+    if (!this.favoritesModal) return;
+    const currentView = this.favoritesModalView;
+    await this.showFavoritesModal(currentView);
+  }
+
+  /**
    * 显示收藏列表弹窗
    */
-  private async showFavoritesModal(): Promise<void> {
+  private async showFavoritesModal(initialView: 'front' | 'back' = 'front'): Promise<void> {
     // 如果弹窗已存在，先移除
-    if (this.favoritesModal) {
-      this.favoritesModal.remove();
-      this.favoritesModal = null;
-    }
+    this.removeFavoritesModalElements();
+    this.favoritesModalView = initialView;
 
     type FavoriteLinkInfo = {
       key: string;
@@ -1330,9 +1344,10 @@ export class RightSideTimelinejump {
       transform: 'rotateY(180deg)'
     });
 
-    let isArchiveView = false;
+    let isArchiveView = initialView === 'back';
     const setArchiveView = async (value: boolean) => {
       isArchiveView = value;
+      this.favoritesModalView = value ? 'back' : 'front';
       card.style.transform = isArchiveView ? 'rotateY(180deg)' : 'rotateY(0deg)';
       if (isArchiveView) {
         await refreshFavoritesCache();
@@ -1489,6 +1504,9 @@ export class RightSideTimelinejump {
 	    document.body.appendChild(modal);
 	    this.favoritesModal = modal;
 	    this.maybeContinueTutorialAfterFavoritesModalOpened();
+	    if (initialView === 'back') {
+	      await setArchiveView(true);
+	    }
 	  }
 
 	  private createFavoritesModalFooter(side: 'front' | 'back'): HTMLElement {
@@ -2452,7 +2470,10 @@ export class RightSideTimelinejump {
     if (this.tutorialStep >= 3) {
       this.endTutorial();
     }
+    this.removeFavoritesModalElements();
+  }
 
+  private removeFavoritesModalElements(): void {
     if (this.favoritesModal) {
       this.favoritesModal.remove();
       this.favoritesModal = null;

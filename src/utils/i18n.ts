@@ -91,7 +91,7 @@ export const messages = {
     'tutorial.step1': '鼠标放到节点上可预览，点击跳转，长按收藏。\n把鼠标放到这个节点上试试吧！',
     'tutorial.step2': '点击底部打开收藏夹。\n点击试试吧！',
     'tutorial.step3': '这里是收藏夹：用来查看收藏内容，点击条目即可跳转。',
-    'tutorial.step4': '点击翻转来进入归档模',
+    'tutorial.step4': '点击翻转来进入归档模式',
     'tutorial.step5': '点击右下角设置，即可修改主题、语言和网站支持。'
   },
   'en': {
