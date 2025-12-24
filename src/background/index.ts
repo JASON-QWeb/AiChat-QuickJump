@@ -52,9 +52,14 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 // 初始化/安装时注册
-chrome.runtime.onInstalled.addListener(async () => {
-    const { custom_urls } = await chrome.storage.sync.get('custom_urls');
-    updateContentScripts(custom_urls || []);
+chrome.runtime.onInstalled.addListener(async (details) => {
+  const { custom_urls } = await chrome.storage.sync.get('custom_urls');
+  updateContentScripts(custom_urls || []);
+
+  // 仅首次安装时开启新手教程
+  if (details.reason === 'install') {
+    chrome.storage.local.set({ 'llm-nav-tutorial-enabled': true });
+  }
 });
 
 // 浏览器启动时注册

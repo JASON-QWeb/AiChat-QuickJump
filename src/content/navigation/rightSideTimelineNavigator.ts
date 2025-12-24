@@ -29,6 +29,8 @@ import {
  * 在页面右侧显示纵向时间线，每个节点代表一个对话
  */
 export class RightSideTimelinejump {
+  private static readonly TUTORIAL_ENABLED_KEY = 'llm-nav-tutorial-enabled';
+
   private container: HTMLElement;
   private timelineBar: HTMLElement;
   private nodesWrapper: HTMLElement;
@@ -77,6 +79,28 @@ export class RightSideTimelinejump {
   
   // 防止 ResizeObserver 无限循环的标志
   private isUpdatingPositions: boolean = false;
+
+  // 新手教程
+  private tutorialStep: 0 | 1 | 2 | 3 | 4 | 5 = 0;
+  private tutorialStartRequested: boolean = false;
+  private tutorialWaitingForFavoritesModal: boolean = false;
+  private tutorialBubble: HTMLDivElement | null = null;
+  private tutorialBubbleArrow: HTMLDivElement | null = null;
+  private tutorialBubbleTitle: HTMLDivElement | null = null;
+  private tutorialBubbleText: HTMLDivElement | null = null;
+  private tutorialBubblePrompt: HTMLDivElement | null = null;
+  private tutorialBubbleActions: HTMLDivElement | null = null;
+  private tutorialSkipConfirming: boolean = false;
+  private tutorialAnchor: HTMLElement | null = null;
+  private tutorialPlacement: 'left' | 'right' | 'top' | 'bottom' = 'left';
+  private tutorialListeners: Array<{
+    target: EventTarget;
+    type: string;
+    handler: EventListenerOrEventListenerObject;
+    options?: AddEventListenerOptions | boolean;
+  }> = [];
+  private tutorialTimeoutIds: number[] = [];
+  private tutorialResizeHandler: (() => void) | null = null;
 
   constructor() {
     // 注入主题动画样式
@@ -1307,8 +1331,9 @@ export class RightSideTimelinejump {
         onClick: () => this.closeFavoritesModal()
       });
 
-    const frontHeader = document.createElement('div');
-    Object.assign(frontHeader.style, {
+	    const frontHeader = document.createElement('div');
+	    frontHeader.classList.add('llm-tutorial-favorites-header');
+	    Object.assign(frontHeader.style, {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
@@ -1328,11 +1353,12 @@ export class RightSideTimelinejump {
     frontTitle.textContent = this.t('favorites.list');
     Object.assign(frontTitle.style, { margin: '0', fontSize: '16px', fontWeight: '600' });
 
-    const flipToArchiveBtn = createIconButton({
-      title: this.t('favorites.archive.open'),
-      svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>`,
-      onClick: async () => setArchiveView(true)
-    });
+	    const flipToArchiveBtn = createIconButton({
+	      title: this.t('favorites.archive.open'),
+	      svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>`,
+	      onClick: async () => setArchiveView(true)
+	    });
+	    flipToArchiveBtn.classList.add('llm-tutorial-flip-archive');
 
     frontTitleGroup.appendChild(frontTitle);
     frontTitleGroup.appendChild(flipToArchiveBtn);
@@ -1344,8 +1370,9 @@ export class RightSideTimelinejump {
     frontHeader.appendChild(frontTitleGroup);
     frontHeader.appendChild(frontRight);
 
-    const frontContent = document.createElement('div');
-    Object.assign(frontContent.style, {
+	    const frontContent = document.createElement('div');
+	    frontContent.classList.add('llm-tutorial-favorites-content');
+	    Object.assign(frontContent.style, {
       flex: '1',
       overflowY: 'auto',
       padding: '12px 20px',
@@ -1353,9 +1380,9 @@ export class RightSideTimelinejump {
     });
     renderFavoritesList(frontContent);
 
-    front.appendChild(frontHeader);
-    front.appendChild(frontContent);
-    front.appendChild(this.createFavoritesModalFooter());
+	    front.appendChild(frontHeader);
+	    front.appendChild(frontContent);
+	    front.appendChild(this.createFavoritesModalFooter('front'));
 
     const backHeader = document.createElement('div');
     Object.assign(backHeader.style, {
@@ -1420,9 +1447,9 @@ export class RightSideTimelinejump {
     backContent.appendChild(archiveContent);
     renderArchiveTree();
 
-    back.appendChild(backHeader);
-    back.appendChild(backContent);
-    back.appendChild(this.createFavoritesModalFooter());
+	    back.appendChild(backHeader);
+	    back.appendChild(backContent);
+	    back.appendChild(this.createFavoritesModalFooter('back'));
 
     card.appendChild(front);
     card.appendChild(back);
@@ -1442,13 +1469,14 @@ export class RightSideTimelinejump {
     });
     overlay.addEventListener('click', () => this.closeFavoritesModal());
     
-    document.body.appendChild(overlay);
-    document.body.appendChild(modal);
-    this.favoritesModal = modal;
-  }
+	    document.body.appendChild(overlay);
+	    document.body.appendChild(modal);
+	    this.favoritesModal = modal;
+	    this.maybeContinueTutorialAfterFavoritesModalOpened();
+	  }
 
-  private createFavoritesModalFooter(): HTMLElement {
-    const footer = document.createElement('div');
+	  private createFavoritesModalFooter(side: 'front' | 'back'): HTMLElement {
+	    const footer = document.createElement('div');
     Object.assign(footer.style, {
       display: 'flex',
       justifyContent: 'space-between',
@@ -1479,8 +1507,10 @@ export class RightSideTimelinejump {
     openSourceLink.addEventListener('mouseenter', () => (openSourceLink.style.opacity = '1'));
     openSourceLink.addEventListener('mouseleave', () => (openSourceLink.style.opacity = '0.8'));
 
-    const settingsBtn = document.createElement('button');
-    settingsBtn.type = 'button';
+	    const settingsBtn = document.createElement('button');
+	    settingsBtn.classList.add('llm-favorites-settings-btn');
+	    settingsBtn.dataset.tutorialSide = side;
+	    settingsBtn.type = 'button';
     settingsBtn.title = this.t('favorites.footer.settings');
     settingsBtn.setAttribute('aria-label', this.t('favorites.footer.settings'));
     settingsBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V22a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 20.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 3.6a1.65 1.65 0 0 0 1-1.51V2a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 20.4 9a1.65 1.65 0 0 0 1.51 1H22a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
@@ -1536,6 +1566,504 @@ export class RightSideTimelinejump {
     } catch {
       // ignore
     }
+  }
+
+  private async isTutorialEnabled(): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        chrome.storage.local.get(RightSideTimelinejump.TUTORIAL_ENABLED_KEY, (result) => {
+          if (chrome.runtime.lastError) {
+            resolve(true);
+            return;
+          }
+
+          const value = result[RightSideTimelinejump.TUTORIAL_ENABLED_KEY];
+          resolve(value !== false);
+        });
+      } catch {
+        resolve(true);
+      }
+    });
+  }
+
+  private async setTutorialEnabled(enabled: boolean): Promise<void> {
+    return new Promise((resolve) => {
+      try {
+        chrome.storage.local.set({ [RightSideTimelinejump.TUTORIAL_ENABLED_KEY]: enabled }, () => resolve());
+      } catch {
+        resolve();
+      }
+    });
+  }
+
+  private maybeStartTutorial(): void {
+    if (this.tutorialStartRequested) return;
+    if (this.nodes.length === 0) return;
+
+    this.tutorialStartRequested = true;
+    void (async () => {
+      const enabled = await this.isTutorialEnabled();
+      if (!enabled) return;
+
+      // 触发后即标记为 false，确保仅出现一次
+      await this.setTutorialEnabled(false);
+
+      window.setTimeout(() => {
+        if (!this.nodes[0] || !this.nodes[0].isConnected) return;
+        this.startTutorialStep1();
+      }, 250);
+    })();
+  }
+
+  private addTutorialListener(
+    target: EventTarget,
+    type: string,
+    handler: EventListenerOrEventListenerObject,
+    options?: AddEventListenerOptions | boolean
+  ): void {
+    target.addEventListener(type, handler, options);
+    this.tutorialListeners.push({ target, type, handler, options });
+  }
+
+  private clearTutorialListeners(): void {
+    this.tutorialListeners.forEach(({ target, type, handler, options }) => {
+      try {
+        target.removeEventListener(type, handler, options as any);
+      } catch {
+        // ignore
+      }
+    });
+    this.tutorialListeners = [];
+  }
+
+  private clearTutorialTimeouts(): void {
+    this.tutorialTimeoutIds.forEach((id) => window.clearTimeout(id));
+    this.tutorialTimeoutIds = [];
+  }
+
+  private endTutorial(): void {
+    this.clearTutorialTimeouts();
+    this.clearTutorialListeners();
+    this.tutorialWaitingForFavoritesModal = false;
+    this.tutorialSkipConfirming = false;
+    this.tutorialStep = 0;
+    this.tutorialAnchor = null;
+
+    if (this.tutorialResizeHandler) {
+      window.removeEventListener('resize', this.tutorialResizeHandler);
+      this.tutorialResizeHandler = null;
+    }
+
+    if (this.tutorialBubble) {
+      this.tutorialBubble.remove();
+      this.tutorialBubble = null;
+      this.tutorialBubbleArrow = null;
+      this.tutorialBubbleTitle = null;
+      this.tutorialBubbleText = null;
+      this.tutorialBubblePrompt = null;
+      this.tutorialBubbleActions = null;
+    }
+  }
+
+  private showTutorialBubble(opts: {
+    step: 1 | 2 | 3 | 4 | 5;
+    target: HTMLElement;
+    placement: 'left' | 'right' | 'top' | 'bottom';
+    message: string;
+  }): void {
+    this.tutorialSkipConfirming = false;
+    this.tutorialAnchor = opts.target;
+    this.tutorialPlacement = opts.placement;
+
+    if (!this.tutorialBubble) {
+      const bubble = document.createElement('div');
+      bubble.className = 'llm-tutorial-bubble';
+      Object.assign(bubble.style, {
+        position: 'fixed',
+        zIndex: '2147483650',
+        maxWidth: '320px',
+        minWidth: '220px',
+        padding: '12px 12px 10px 12px',
+        borderRadius: '12px',
+        backgroundColor: this.currentTheme.tooltipBackgroundColor,
+        color: this.currentTheme.tooltipTextColor,
+        border: '1px solid rgba(128,128,128,0.25)',
+        boxShadow: '0 6px 24px rgba(0,0,0,0.32)',
+        fontSize: '13px',
+        lineHeight: '1.45'
+      });
+
+      const arrow = document.createElement('div');
+      Object.assign(arrow.style, {
+        position: 'absolute',
+        width: '0',
+        height: '0'
+      });
+
+      const title = document.createElement('div');
+      Object.assign(title.style, {
+        fontWeight: '700',
+        fontSize: '12px',
+        opacity: '0.85',
+        marginBottom: '6px'
+      });
+
+      const text = document.createElement('div');
+      Object.assign(text.style, {
+        marginBottom: '8px',
+        whiteSpace: 'pre-wrap'
+      });
+
+      const prompt = document.createElement('div');
+      Object.assign(prompt.style, {
+        display: 'none',
+        fontSize: '12px',
+        opacity: '0.75',
+        marginBottom: '8px'
+      });
+
+      const actions = document.createElement('div');
+      Object.assign(actions.style, {
+        display: 'flex',
+        justifyContent: 'flex-end',
+        gap: '8px'
+      });
+
+      bubble.appendChild(arrow);
+      bubble.appendChild(title);
+      bubble.appendChild(text);
+      bubble.appendChild(prompt);
+      bubble.appendChild(actions);
+
+      document.body.appendChild(bubble);
+
+      this.tutorialBubble = bubble;
+      this.tutorialBubbleArrow = arrow;
+      this.tutorialBubbleTitle = title;
+      this.tutorialBubbleText = text;
+      this.tutorialBubblePrompt = prompt;
+      this.tutorialBubbleActions = actions;
+
+      this.tutorialResizeHandler = () => this.positionTutorialBubble();
+      window.addEventListener('resize', this.tutorialResizeHandler);
+    }
+
+    if (!this.tutorialBubbleTitle || !this.tutorialBubbleText || !this.tutorialBubblePrompt) return;
+
+    this.tutorialBubbleTitle.textContent = `${this.t('tutorial.title')} (${opts.step}/5)`;
+    this.tutorialBubbleText.textContent = opts.message;
+    this.tutorialBubblePrompt.style.display = 'none';
+    this.tutorialBubblePrompt.textContent = '';
+
+    this.renderTutorialActions();
+    this.positionTutorialBubble();
+    requestAnimationFrame(() => this.positionTutorialBubble());
+  }
+
+  private renderTutorialActions(): void {
+    if (!this.tutorialBubbleActions || !this.tutorialBubblePrompt) return;
+    const actions = this.tutorialBubbleActions;
+    actions.innerHTML = '';
+
+    const baseBtnStyle: Partial<CSSStyleDeclaration> = {
+      padding: '6px 10px',
+      borderRadius: '10px',
+      border: '1px solid rgba(128,128,128,0.3)',
+      backgroundColor: 'transparent',
+      color: this.currentTheme.tooltipTextColor,
+      cursor: 'pointer',
+      fontSize: '12px',
+      transition: 'all 0.2s ease'
+    };
+
+    const primaryBtnStyle: Partial<CSSStyleDeclaration> = {
+      ...baseBtnStyle,
+      border: 'none',
+      backgroundColor: this.currentTheme.activeColor,
+      color: '#fff'
+    };
+
+    const createBtn = (label: string, style: Partial<CSSStyleDeclaration>) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = label;
+      Object.assign(btn.style, style);
+      btn.addEventListener('mouseenter', () => {
+        btn.style.filter = 'brightness(0.95)';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.filter = 'none';
+      });
+      return btn;
+    };
+
+    if (!this.tutorialSkipConfirming) {
+      const skipBtn = createBtn(this.t('tutorial.skip'), baseBtnStyle);
+      skipBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.tutorialSkipConfirming = true;
+        this.renderTutorialActions();
+      });
+      actions.appendChild(skipBtn);
+      return;
+    }
+
+    this.tutorialBubblePrompt.textContent = this.t('tutorial.skipConfirm');
+    this.tutorialBubblePrompt.style.display = 'block';
+
+    const cancelBtn = createBtn(this.t('favorites.cancel'), baseBtnStyle);
+    cancelBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.tutorialSkipConfirming = false;
+      this.renderTutorialActions();
+    });
+
+    const confirmBtn = createBtn(this.t('favorites.confirm'), primaryBtnStyle);
+    confirmBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.endTutorial();
+    });
+
+    actions.appendChild(cancelBtn);
+    actions.appendChild(confirmBtn);
+  }
+
+  private positionTutorialBubble(): void {
+    if (!this.tutorialBubble || !this.tutorialBubbleArrow || !this.tutorialAnchor) return;
+    if (!this.tutorialAnchor.isConnected) return;
+
+    const targetRect = this.tutorialAnchor.getBoundingClientRect();
+    const bubbleRect = this.tutorialBubble.getBoundingClientRect();
+    const gap = 12;
+    const margin = 10;
+
+    let left = 0;
+    let top = 0;
+
+    const placement = this.tutorialPlacement;
+    if (placement === 'left') {
+      left = targetRect.left - bubbleRect.width - gap;
+      top = targetRect.top + targetRect.height / 2 - bubbleRect.height / 2;
+    } else if (placement === 'right') {
+      left = targetRect.right + gap;
+      top = targetRect.top + targetRect.height / 2 - bubbleRect.height / 2;
+    } else if (placement === 'top') {
+      left = targetRect.left + targetRect.width / 2 - bubbleRect.width / 2;
+      top = targetRect.top - bubbleRect.height - gap;
+    } else {
+      left = targetRect.left + targetRect.width / 2 - bubbleRect.width / 2;
+      top = targetRect.bottom + gap;
+    }
+
+    left = Math.max(margin, Math.min(left, window.innerWidth - bubbleRect.width - margin));
+    top = Math.max(margin, Math.min(top, window.innerHeight - bubbleRect.height - margin));
+
+    this.tutorialBubble.style.left = `${left}px`;
+    this.tutorialBubble.style.top = `${top}px`;
+
+    const bg = this.currentTheme.tooltipBackgroundColor;
+    const arrow = this.tutorialBubbleArrow;
+    arrow.style.border = '';
+    arrow.style.left = '';
+    arrow.style.right = '';
+    arrow.style.top = '';
+    arrow.style.bottom = '';
+
+    const arrowSize = 8;
+    if (placement === 'left') {
+      Object.assign(arrow.style, {
+        borderTop: `${arrowSize}px solid transparent`,
+        borderBottom: `${arrowSize}px solid transparent`,
+        borderLeft: `${arrowSize}px solid ${bg}`,
+        right: `-${arrowSize}px`,
+        top: `${bubbleRect.height / 2 - arrowSize}px`
+      });
+    } else if (placement === 'right') {
+      Object.assign(arrow.style, {
+        borderTop: `${arrowSize}px solid transparent`,
+        borderBottom: `${arrowSize}px solid transparent`,
+        borderRight: `${arrowSize}px solid ${bg}`,
+        left: `-${arrowSize}px`,
+        top: `${bubbleRect.height / 2 - arrowSize}px`
+      });
+    } else if (placement === 'top') {
+      Object.assign(arrow.style, {
+        borderLeft: `${arrowSize}px solid transparent`,
+        borderRight: `${arrowSize}px solid transparent`,
+        borderTop: `${arrowSize}px solid ${bg}`,
+        bottom: `-${arrowSize}px`,
+        left: `${bubbleRect.width / 2 - arrowSize}px`
+      });
+    } else {
+      Object.assign(arrow.style, {
+        borderLeft: `${arrowSize}px solid transparent`,
+        borderRight: `${arrowSize}px solid transparent`,
+        borderBottom: `${arrowSize}px solid ${bg}`,
+        top: `-${arrowSize}px`,
+        left: `${bubbleRect.width / 2 - arrowSize}px`
+      });
+    }
+  }
+
+  private startTutorialStep1(): void {
+    const firstNode = this.nodes[0];
+    if (!firstNode) return;
+    this.tutorialStep = 1;
+
+    this.showTutorialBubble({
+      step: 1,
+      target: firstNode,
+      placement: 'left',
+      message: this.t('tutorial.step1')
+    });
+
+    const onHover = () => {
+      if (this.tutorialStep !== 1) return;
+      this.startTutorialStep2();
+    };
+    this.addTutorialListener(firstNode, 'mouseenter', onHover, { once: true });
+
+    // 如果已在 hover 状态，视作完成
+    this.tutorialTimeoutIds.push(
+      window.setTimeout(() => {
+        if (this.tutorialStep === 1 && firstNode.matches(':hover')) {
+          this.startTutorialStep2();
+        }
+      }, 250)
+    );
+  }
+
+  private startTutorialStep2(): void {
+    const btn = this.bottomStarsButton;
+    if (!btn) {
+      this.endTutorial();
+      return;
+    }
+
+    this.tutorialStep = 2;
+    this.showTutorialBubble({
+      step: 2,
+      target: btn,
+      placement: 'left',
+      message: this.t('tutorial.step2')
+    });
+
+    const onClick = () => {
+      if (this.tutorialStep !== 2) return;
+      this.tutorialWaitingForFavoritesModal = true;
+      this.tutorialStep = 3;
+      // 等收藏弹窗打开后再显示下一步
+      if (this.tutorialResizeHandler) {
+        window.removeEventListener('resize', this.tutorialResizeHandler);
+        this.tutorialResizeHandler = null;
+      }
+      if (this.tutorialBubble) {
+        this.tutorialBubble.remove();
+        this.tutorialBubble = null;
+        this.tutorialBubbleArrow = null;
+        this.tutorialBubbleTitle = null;
+        this.tutorialBubbleText = null;
+        this.tutorialBubblePrompt = null;
+        this.tutorialBubbleActions = null;
+      }
+    };
+
+    this.addTutorialListener(btn, 'click', onClick, { once: true, capture: true });
+  }
+
+  private maybeContinueTutorialAfterFavoritesModalOpened(): void {
+    if (this.tutorialStep !== 3 || !this.tutorialWaitingForFavoritesModal) return;
+    this.tutorialWaitingForFavoritesModal = false;
+
+    const modal = this.favoritesModal;
+    if (!modal) return;
+
+    const header = modal.querySelector('.llm-tutorial-favorites-header') as HTMLElement | null;
+    const content = modal.querySelector('.llm-tutorial-favorites-content') as HTMLElement | null;
+    const target = header || content;
+    if (!target) return;
+
+    this.startTutorialStep3(target);
+  }
+
+  private startTutorialStep3(target: HTMLElement): void {
+    this.tutorialStep = 3;
+    this.showTutorialBubble({
+      step: 3,
+      target,
+      placement: 'top',
+      message: this.t('tutorial.step3')
+    });
+
+    // 给用户读一会儿，再提示归档入口
+    this.tutorialTimeoutIds.push(
+      window.setTimeout(() => {
+        if (this.tutorialStep === 3) this.startTutorialStep4();
+      }, 2200)
+    );
+  }
+
+  private startTutorialStep4(): void {
+    const modal = this.favoritesModal;
+    if (!modal) {
+      this.endTutorial();
+      return;
+    }
+
+    const flipBtn = modal.querySelector('.llm-tutorial-flip-archive') as HTMLElement | null;
+    if (!flipBtn) {
+      this.endTutorial();
+      return;
+    }
+
+    this.tutorialStep = 4;
+    this.showTutorialBubble({
+      step: 4,
+      target: flipBtn,
+      placement: 'bottom',
+      message: this.t('tutorial.step4')
+    });
+
+    const onClick = () => {
+      if (this.tutorialStep !== 4) return;
+      // 等翻转动画结束再展示下一步
+      this.tutorialTimeoutIds.push(
+        window.setTimeout(() => {
+          if (this.tutorialStep === 4) this.startTutorialStep5();
+        }, 650)
+      );
+    };
+    this.addTutorialListener(flipBtn, 'click', onClick, { once: true });
+  }
+
+  private startTutorialStep5(): void {
+    const modal = this.favoritesModal;
+    if (!modal) {
+      this.endTutorial();
+      return;
+    }
+
+    const settingsBtn =
+      (modal.querySelector('.llm-favorites-settings-btn[data-tutorial-side="back"]') as HTMLElement | null) ||
+      (modal.querySelector('.llm-favorites-settings-btn') as HTMLElement | null);
+    if (!settingsBtn) {
+      this.endTutorial();
+      return;
+    }
+
+    this.tutorialStep = 5;
+    this.showTutorialBubble({
+      step: 5,
+      target: settingsBtn,
+      placement: 'top',
+      message: this.t('tutorial.step5')
+    });
+
+    const onClick = () => {
+      if (this.tutorialStep !== 5) return;
+      this.endTutorial();
+    };
+    this.addTutorialListener(settingsBtn, 'click', onClick, { once: true, capture: true });
   }
 
   /**
@@ -1903,6 +2431,10 @@ export class RightSideTimelinejump {
    * 关闭收藏弹窗
    */
   private closeFavoritesModal(): void {
+    if (this.tutorialStep >= 3) {
+      this.endTutorial();
+    }
+
     if (this.favoritesModal) {
       this.favoritesModal.remove();
       this.favoritesModal = null;
@@ -2728,6 +3260,7 @@ export class RightSideTimelinejump {
     const currentCount = this.nodes.length;
 
     if (newCount === 0) {
+      this.endTutorial();
       // 清空节点
         this.nodes.forEach(node => node.remove());
         this.nodes = [];
@@ -2774,6 +3307,7 @@ export class RightSideTimelinejump {
 
     // 3. 计算并更新所有节点位置（利用 CSS transition 实现平滑移动）
     this.updateNodePositions();
+    this.maybeStartTutorial();
   }
 
   /**
@@ -2951,6 +3485,7 @@ export class RightSideTimelinejump {
    * 销毁时间线
    */
   destroy(): void {
+    this.endTutorial();
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
