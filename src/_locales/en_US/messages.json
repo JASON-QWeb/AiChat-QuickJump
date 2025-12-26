@@ -4,7 +4,7 @@
     "description": "Name of the extension"
   },
   "extensionDescription": {
-    "message": "Provide quick jump, marking, and bookmarking functions for ChatGPT, Gemini, Deepseek, and so on. Support customizable shortcuts, themes.",
+    "message": "Quick navigation, highlighting and bookmarks for ChatGPT, Gemini and other AI chats. Find key content faster with less scrolling, custom shortcuts and themes.",
     "description": "Description of the extension"
   },
   "cmdPrevAnswer": {
