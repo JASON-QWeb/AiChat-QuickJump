@@ -63,7 +63,36 @@ export const messages = {
     'favorites.deleteSubItem': '删除此子项',
     'favorites.confirmDelete': '确定要删除这个收藏吗？',
     'favorites.cancel': '取消',
-    'favorites.confirm': '确定'
+    'favorites.confirm': '确定',
+    'favorites.footer.openSource': '项目已开源，欢迎🌟Star和反馈',
+    'favorites.footer.settings': '设置',
+    'favorites.archive.title': '归档',
+    'favorites.archive.open': '归档',
+    'favorites.archive.back': '收藏列表',
+    'favorites.archive.newFolder': '新建文件夹',
+    'favorites.archive.newSubfolder': '新建子文件夹',
+    'favorites.archive.rename': '重命名',
+    'favorites.archive.deleteFolder': '删除文件夹',
+    'favorites.archive.import': '导入',
+    'favorites.archive.importTo': '导入到文件夹',
+    'favorites.archive.noFolders': '暂无文件夹（先新建一个吧）',
+    'favorites.archive.noImportable': '暂无可导入链接',
+    'favorites.archive.addToFolder': '加入文件夹',
+    'favorites.archive.removeFromFolder': '移出文件夹',
+    'favorites.archive.missingLink': '链接已不存在（已从收藏移除）',
+    'favorites.archive.folderDeleteConfirm': '确定删除该文件夹及其内容吗？',
+    'favorites.archive.folderNamePlaceholder': '输入文件夹名称',
+    'favorites.archive.close': '关闭',
+
+    // Tutorial
+    'tutorial.title': '新手教程',
+    'tutorial.skip': '跳过',
+    'tutorial.skipConfirm': '确认跳过新手教程？',
+    'tutorial.step1': '鼠标放到节点上可预览，点击跳转，长按收藏。\n把鼠标放到这个节点上试试吧！',
+    'tutorial.step2': '点击底部打开收藏夹。\n点击试试吧！',
+    'tutorial.step3': '这里是收藏夹：用来查看收藏内容，点击条目即可跳转。',
+    'tutorial.step4': '点击翻转来进入归档模式',
+    'tutorial.step5': '点击右下角设置，即可修改主题、语言和网站支持。'
   },
   'en': {
     // Options Page
@@ -127,7 +156,36 @@ export const messages = {
     'favorites.deleteSubItem': 'Delete item',
     'favorites.confirmDelete': 'Are you sure you want to delete this?',
     'favorites.cancel': 'Cancel',
-    'favorites.confirm': 'Confirm'
+    'favorites.confirm': 'Confirm',
+    'favorites.footer.openSource': 'Open source — 🌟Star & feedback',
+    'favorites.footer.settings': 'Settings',
+    'favorites.archive.title': 'Archive',
+    'favorites.archive.open': 'Archive',
+    'favorites.archive.back': 'Favorites',
+    'favorites.archive.newFolder': 'New folder',
+    'favorites.archive.newSubfolder': 'New subfolder',
+    'favorites.archive.rename': 'Rename',
+    'favorites.archive.deleteFolder': 'Delete folder',
+    'favorites.archive.import': 'Import',
+    'favorites.archive.importTo': 'Import to folder',
+    'favorites.archive.noFolders': 'No folders yet',
+    'favorites.archive.noImportable': 'No importable links',
+    'favorites.archive.addToFolder': 'Add to folder',
+    'favorites.archive.removeFromFolder': 'Remove from folder',
+    'favorites.archive.missingLink': 'Link missing (removed from favorites)',
+    'favorites.archive.folderDeleteConfirm': 'Delete this folder and all its contents?',
+    'favorites.archive.folderNamePlaceholder': 'Folder name',
+    'favorites.archive.close': 'Close',
+
+    // Tutorial
+    'tutorial.title': 'Tutorial',
+    'tutorial.skip': 'Skip',
+    'tutorial.skipConfirm': 'Skip the tutorial?',
+    'tutorial.step1': 'Hover a node to preview, click to jump, long-press to favorite.\nTry hovering this node to continue.',
+    'tutorial.step2': 'Click at the bottom to open your favorites.\nGive it a try!',
+    'tutorial.step3': 'This is Favorites: browse your saved items and click one to jump.',
+    'tutorial.step4': 'Click here to flip the card into Archive mode.',
+    'tutorial.step5': 'Click Settings to change theme, language and site support.'
   }
 };
 
@@ -146,4 +204,3 @@ export function getTranslation(key: string, lang: Language): string {
   const dict = messages[targetLang as keyof typeof messages] || messages['en'];
   return dict[key as keyof typeof dict] || key;
 }
-

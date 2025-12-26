@@ -1,17 +1,15 @@
-# AI Chat Quick Jump — v2.0.1
+# AI Chat Quick Jump — v2.0.2
 
 ---
 
-## 添加更多平台支持
- - 豆包
- - Kimi
- - 千问
+## 新增归纳功能
+
+- 加入收藏链接归纳功能
 
 ---
 
-## Add more platforms support
- - Doubao
- - Kimi
- - Qwen
+## 新增新手指南
+
+- 添加初次使用指引教程
 
 ---

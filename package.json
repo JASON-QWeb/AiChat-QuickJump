@@ -1,19 +1,23 @@
 {
   "name": "ai-chat-quick-jump",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "AI Chat Quick jump - Make AI Conversation Navigation Simple and Efficient",
   "scripts": {
     "build": "node build.js",
     "dev": "node build.js --watch",
     "package": "node build.js && node package-extension.js"
   },
-  "keywords": ["chrome-extension", "llm", "chatgpt", "navigation"],
+  "keywords": [
+    "chrome-extension",
+    "llm",
+    "chatgpt",
+    "navigation"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "@types/chrome": "^0.0.268",
-    "esbuild": "^0.19.0",
+    "esbuild": "^0.27.2",
     "typescript": "^5.3.0"
   }
 }
-

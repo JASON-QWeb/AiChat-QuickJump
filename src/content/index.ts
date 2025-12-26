@@ -48,6 +48,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
     if (changes.ui_theme && timelinejump) {
       timelinejump.setTheme(changes.ui_theme.newValue || 'auto');
     }
+    if (changes.language && timelinejump) {
+      timelinejump.setLanguage(changes.language.newValue || 'auto');
+    }
   }
 });
 
