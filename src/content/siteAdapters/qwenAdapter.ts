@@ -50,15 +50,37 @@ export const qwenAdapter: SiteAdapter = {
     if (hostname.includes('chat.qwen.ai')) {
       return root.querySelectorAll('.user-message-content').length;
     } else {
-      const selectors = [
-        '.questionItem-MPmrIl',
-        '.content-YjXTeU',
-        '.bubble-uo23is'
-      ].join(',');
-      return root.querySelectorAll(selectors).length;
+      return selectQianwenUserMessages(root).length;
     }
   }
 };
+
+/**
+ * Helper: Select user messages for qianwen.com (Old)
+ * Strategy: Try selectors in order, use the first one that matches, and filter valid nodes
+ */
+const qianwenUserMsgSelectors = [
+  '.questionItem-MPmrIl',
+  '.content-YjXTeU',
+  '.bubble-uo23is'
+];
+
+function selectQianwenUserMessages(root: Document | HTMLElement): HTMLElement[] {
+  for (const selector of qianwenUserMsgSelectors) {
+    const found = root.querySelectorAll(selector);
+    if (found.length > 0) {
+      const validMessages = Array.from(found).filter(el => 
+        el instanceof HTMLElement && isValidNode(el)
+      ) as HTMLElement[];
+      
+      // If we found valid messages with this selector, return them
+      if (validMessages.length > 0) {
+        return validMessages;
+      }
+    }
+  }
+  return [];
+}
 
 /**
  * -----------------------------------------------------------------------------
@@ -149,23 +171,8 @@ function findAIMessageForChatQwen(userMessageEl: Element): Element | null {
 function getPairsForQianwenCom(root: Document | HTMLElement): PromptAnswerPair[] {
   const pairs: PromptAnswerPair[] = [];
   
-  const userMessageSelectors = [
-    '.questionItem-MPmrIl',
-    '.content-YjXTeU',
-    '.bubble-uo23is'
-  ];
-
-  let userMessages: HTMLElement[] = [];
-  
-  for (const selector of userMessageSelectors) {
-    const found = root.querySelectorAll(selector);
-    if (found.length > 0) {
-      userMessages = Array.from(found).filter(el => 
-        el instanceof HTMLElement && isValidNode(el)
-      ) as HTMLElement[];
-      if (userMessages.length > 0) break;
-    }
-  }
+  // Use the shared selector logic
+  const userMessages = selectQianwenUserMessages(root);
 
   userMessages.forEach((userMsg, index) => {
     // Try to find the AI answer (following the user message)

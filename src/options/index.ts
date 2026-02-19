@@ -13,7 +13,9 @@ const CONFIG_KEYS = {
   ENABLE_DOUBAO: 'enable_doubao',
   UI_THEME: 'ui_theme',
   CUSTOM_URLS: 'custom_urls',
-  LANGUAGE: 'language'
+  LANGUAGE: 'language',
+  NAV_MIN_SCALE: 'nav_min_scale',
+  NAV_SCROLL_THRESHOLD: 'nav_scroll_threshold'
 };
 
 let currentLanguage: Language = 'auto';
@@ -106,7 +108,9 @@ async function loadSettings(): Promise<void> {
       CONFIG_KEYS.ENABLE_DOUBAO,
       CONFIG_KEYS.UI_THEME,
       CONFIG_KEYS.CUSTOM_URLS,
-      CONFIG_KEYS.LANGUAGE
+      CONFIG_KEYS.LANGUAGE,
+      CONFIG_KEYS.NAV_MIN_SCALE,
+      CONFIG_KEYS.NAV_SCROLL_THRESHOLD
     ]);
     
     const enableChatGPT = result[CONFIG_KEYS.ENABLE_CHATGPT] !== false; // 默认启用
@@ -120,6 +124,8 @@ async function loadSettings(): Promise<void> {
     const uiTheme = result[CONFIG_KEYS.UI_THEME] || 'auto'; // 默认跟随系统
     const customUrls = result[CONFIG_KEYS.CUSTOM_URLS] || [];
     const language = result[CONFIG_KEYS.LANGUAGE] || 'auto';
+    const navMinScale = result[CONFIG_KEYS.NAV_MIN_SCALE] ?? 0.6;
+    const navScrollThreshold = result[CONFIG_KEYS.NAV_SCROLL_THRESHOLD] ?? 18;
     
     currentLanguage = language;
     applyTranslations(currentLanguage);
@@ -149,6 +155,19 @@ async function loadSettings(): Promise<void> {
     }
     
     renderCustomUrls(customUrls);
+    
+    // 渲染导航设置
+    const minScaleInput = document.getElementById('nav-min-scale') as HTMLInputElement;
+    const minScaleValue = document.getElementById('nav-min-scale-value');
+    if (minScaleInput && minScaleValue) {
+      minScaleInput.value = String(navMinScale);
+      minScaleValue.textContent = String(navMinScale);
+    }
+
+    const scrollThresholdInput = document.getElementById('nav-scroll-threshold') as HTMLInputElement;
+    if (scrollThresholdInput) {
+      scrollThresholdInput.value = String(navScrollThreshold);
+    }
     
     // 加载快捷键
     loadShortcuts();
@@ -268,6 +287,22 @@ function showSaveStatus(): void {
   }
 }
 
+// 通知内容脚本配置变更
+function notifyConfigChange(config: any): void {
+  chrome.tabs.query({}, (tabs) => {
+    tabs.forEach((tab) => {
+      if (tab.id) {
+        chrome.tabs.sendMessage(tab.id, {
+          type: 'LLM_NAV_UPDATE_CONFIG',
+          config
+        }).catch(() => {
+          // 忽略错误
+        });
+      }
+    });
+  });
+}
+
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
   // 加载设置
@@ -351,6 +386,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
+  // 监听导航设置变化
+  const minScaleInput = document.getElementById('nav-min-scale') as HTMLInputElement;
+  const minScaleValue = document.getElementById('nav-min-scale-value');
+  if (minScaleInput && minScaleValue) {
+    minScaleInput.addEventListener('input', (e) => {
+      const target = e.target as HTMLInputElement;
+      const value = parseFloat(target.value);
+      minScaleValue.textContent = String(value);
+      saveSetting(CONFIG_KEYS.NAV_MIN_SCALE, value);
+      notifyConfigChange({ minNodeScale: value });
+    });
+  }
+
+  const scrollThresholdInput = document.getElementById('nav-scroll-threshold') as HTMLInputElement;
+  if (scrollThresholdInput) {
+    scrollThresholdInput.addEventListener('change', (e) => {
+      const target = e.target as HTMLInputElement;
+      let value = parseInt(target.value, 10);
+      // 简单的边界检查
+      if (value < 10) value = 10;
+      if (value > 50) value = 50;
+      target.value = String(value);
+      
+      saveSetting(CONFIG_KEYS.NAV_SCROLL_THRESHOLD, value);
+      notifyConfigChange({ scrollThreshold: value });
+    });
+  }
+
   // 监听打开快捷键设置按钮
   const editShortcutsBtn = document.getElementById('edit-shortcuts-btn');
   if (editShortcutsBtn) {

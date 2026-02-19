@@ -636,6 +636,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       timelinejump.togglePinnedCurrent();
     }
     sendResponse({ success: true });
+  } else if (message.type === 'LLM_NAV_UPDATE_CONFIG') {
+    if (timelinejump) {
+      timelinejump.updateConfig(message.config);
+    }
+    sendResponse({ success: true });
   }
   
   // 所有消息都同步处理完成，不需要返回 true

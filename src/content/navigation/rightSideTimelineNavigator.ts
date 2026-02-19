@@ -94,6 +94,14 @@ export class RightSideTimelinejump {
   // 防止 ResizeObserver 无限循环的标志
   private isUpdatingPositions: boolean = false;
 
+  private config: {
+    minNodeScale: number;
+    scrollThreshold: number;
+  } = {
+    minNodeScale: 0.6,
+    scrollThreshold: 18
+  };
+
   // 新手教程
   private tutorialStep: 0 | 1 | 2 | 3 | 4 | 5 = 0;
   private tutorialStartRequested: boolean = false;
@@ -159,6 +167,14 @@ export class RightSideTimelinejump {
       // 只有在 auto 模式下才响应系统变化，这里需要从外部触发更新，或者存储当前的 mode
       // 简单起见，由外部 content script 监听 storage 变化来驱动 setTheme
     });
+  }
+
+  /**
+   * 更新配置
+   */
+  updateConfig(config: Partial<typeof this.config>): void {
+    this.config = { ...this.config, ...config };
+    this.updateNodePositions();
   }
 
   /**
@@ -764,21 +780,18 @@ export class RightSideTimelinejump {
     node.classList.add('christmas-node-sphere');
 
     // 基础变换和层级
+    // 注意：具体的 transform scale 现在由 updateNodeScale 控制
     if (isActive && isPinned) {
       // 标记且激活 - 红色更亮更大
-      node.style.transform = 'translate(-50%, -50%) scale(1.4)';
       node.style.zIndex = '10';
       node.classList.add('christmas-node-pinned-active');
     } else if (isActive) {
-      node.style.transform = 'translate(-50%, -50%) scale(1.4)';
       node.style.zIndex = '10';
       node.classList.add('christmas-node-active');
     } else if (isPinned) {
-      node.style.transform = 'translate(-50%, -50%) scale(1.2)';
       node.style.zIndex = '5';
       node.classList.add('christmas-node-pinned');
     } else {
-      node.style.transform = 'translate(-50%, -50%) scale(1)';
       node.style.zIndex = '1';
       node.classList.add('christmas-node-default');
     }
@@ -786,6 +799,13 @@ export class RightSideTimelinejump {
     // 清除溢出限制以显示阴影
     node.style.overflow = 'visible';
     node.style.border = 'none';
+
+    // 触发一次 scale 更新以应用正确的初始大小
+    const index = parseInt(node.dataset.index || '0');
+    const count = this.items.length;
+    const isScrollMode = count > this.config.scrollThreshold && (this.contentHeight > this.container.clientHeight);
+    const scale = isScrollMode ? this.calculateScale(count) : 1.0;
+    this.updateNodeScale(node, scale, index);
   }
 
   /**
@@ -809,19 +829,23 @@ export class RightSideTimelinejump {
     node.style.overflow = 'visible';
 
     // 基础变换 - 按住时放大效果更明显
+    // 注意：具体的 transform scale 现在由 updateNodeScale 控制
     if (isActive && isPinned) {
-      node.style.transform = 'translate(-50%, -50%) scale(2.0)';
       node.style.zIndex = '10';
     } else if (isActive) {
-      node.style.transform = 'translate(-50%, -50%) scale(1.8)';
       node.style.zIndex = '10';
     } else if (isPinned) {
-      node.style.transform = 'translate(-50%, -50%) scale(1.3)';
       node.style.zIndex = '5';
     } else {
-      node.style.transform = 'translate(-50%, -50%) scale(1.2)';
       node.style.zIndex = '1';
     }
+
+    // 触发一次 scale 更新以应用正确的初始大小
+    const index = parseInt(node.dataset.index || '0');
+    const count = this.items.length;
+    const isScrollMode = count > this.config.scrollThreshold && (this.contentHeight > this.container.clientHeight);
+    const scale = isScrollMode ? this.calculateScale(count) : 1.0;
+    this.updateNodeScale(node, scale, index);
 
     // 创建瞄准图案容器 - 放大SVG
     const crosshair = document.createElement('div');
@@ -1100,15 +1124,23 @@ export class RightSideTimelinejump {
     // 3. 计算并更新所有节点位置（利用 CSS transition 实现平滑移动）
     this.updateNodePositions();
     this.maybeStartTutorial();
+
+    // 加载配置
+    chrome.storage.sync.get(['nav_min_scale', 'nav_scroll_threshold'], (result) => {
+      if (result.nav_min_scale !== undefined || result.nav_scroll_threshold !== undefined) {
+        this.updateConfig({
+          minNodeScale: result.nav_min_scale,
+          scrollThreshold: result.nav_scroll_threshold
+        });
+      }
+    });
   }
 
   /**
    * 更新所有节点的位置
    * 采用"等间距分布"策略 (Even Distribution)：
-   * - 第一个节点固定在顶部 (Padding 位置)
-   * - 最后一个节点固定在底部 (ContainerHeight - Padding)
-   * - 中间节点均匀分布
-   * - 这种方式类似"气泡"效果：新节点加入底部，旧节点自动向上挤压调整，且不再依赖页面 scrollHeight，彻底解决节点不可见问题
+   * - 节点数量少时，使用 Fit Mode（均匀分布，无滚动）
+   * - 节点数量多时，使用 Scroll Mode（固定间距，可滚动）
    */
   private updateNodePositions(): void {
     // 防止递归触发 ResizeObserver
@@ -1124,32 +1156,126 @@ export class RightSideTimelinejump {
       if (containerHeight === 0) return;
 
       const padding = 30; // 上下留白
-      const usableHeight = containerHeight - padding * 2;
+      const minGap = this.MIN_NODE_GAP;
 
-      this.items.forEach((item, index) => {
-        const node = this.nodes[index];
-        if (!node) return;
+      // 计算所需高度
+      const requiredHeight = padding * 2 + (count - 1) * minGap;
 
-        let topPosition = padding;
-
-        if (count === 1) {
-          // 如果只有一个节点，显示在顶部
-          topPosition = padding;
-        } else {
-          // 多个节点：按索引均匀分布
-          // 公式：Padding + (当前索引 / (总数 - 1)) * 可用高度
-          // index=0 -> 0% (Top)
-          // index=max -> 100% (Bottom)
-          const ratio = index / (count - 1);
-          topPosition = padding + ratio * usableHeight;
-        }
-
-        node.style.top = `${topPosition}px`;
-      });
+      // 决定使用哪种模式
+      if (count > this.config.scrollThreshold && requiredHeight > containerHeight) {
+        // Scroll Mode
+        this.applyScrollMode(count, padding, minGap);
+      } else {
+        // Fit Mode (现有逻辑)
+        this.applyFitMode(count, padding, containerHeight);
+      }
     } finally {
       // 确保标志位被重置
       this.isUpdatingPositions = false;
     }
+  }
+
+  private applyScrollMode(count: number, padding: number, minGap: number): void {
+    // 设置内容高度
+    const contentHeight = padding * 2 + (count - 1) * minGap;
+    this.nodesContent.style.height = `${contentHeight}px`;
+    this.contentHeight = contentHeight;
+
+    // 计算缩放比例
+    const scale = this.calculateScale(count);
+
+    // 按固定间距排列节点
+    this.items.forEach((item, index) => {
+      const node = this.nodes[index];
+      if (!node) return;
+
+      const topPosition = padding + index * minGap;
+      node.style.top = `${topPosition}px`;
+      
+      // 更新缩放
+      this.updateNodeScale(node, scale, index);
+    });
+
+    // 显示滚动条
+    this.updateSliderVisibility();
+  }
+
+  private applyFitMode(count: number, padding: number, containerHeight: number): void {
+    // 恢复内容高度为 100%
+    this.nodesContent.style.height = '100%';
+    this.contentHeight = containerHeight;
+    const usableHeight = containerHeight - padding * 2;
+
+    this.items.forEach((item, index) => {
+      const node = this.nodes[index];
+      if (!node) return;
+
+      let topPosition = padding;
+      if (count > 1) {
+        // 多个节点：按索引均匀分布
+        const ratio = index / (count - 1);
+        topPosition = padding + ratio * usableHeight;
+      }
+
+      node.style.top = `${topPosition}px`;
+      
+      // 恢复默认缩放 (1.0)
+      this.updateNodeScale(node, 1.0, index);
+    });
+
+    // 隐藏滚动条
+    this.hideSlider();
+  }
+
+  private calculateScale(nodeCount: number): number {
+    const minScale = this.config.minNodeScale ?? 0.6;
+    const threshold = this.config.scrollThreshold ?? 18;
+
+    if (nodeCount <= threshold) return 1.0;
+
+    const excess = nodeCount - threshold;
+    const reduction = Math.min(0.4, excess * 0.02);
+    return Math.max(minScale, 1.0 - reduction);
+  }
+
+  private updateNodeScale(node: HTMLElement, scale: number, index: number): void {
+    const isActive = index === this.activeIndex;
+    const isPinned = this.pinnedNodes.has(String(index));
+    const themeTypeFlag = this.currentTheme.themeType;
+
+    // 获取当前应该应用的基础 transform（不含 scale）
+    let baseTransform = 'translate(-50%, -50%)';
+    let targetScale = scale;
+
+    // 根据状态调整最终缩放
+    if (isActive) {
+       // 激活状态通常会放大
+       if (themeTypeFlag === 'scifi') {
+          targetScale = scale * 1.8;
+       } else if (themeTypeFlag === 'christmas') {
+          targetScale = scale * 1.4;
+       } else {
+          targetScale = scale * 1.4;
+       }
+    } else if (isPinned) {
+       // 标记状态也会稍微放大
+       if (themeTypeFlag === 'scifi') {
+          targetScale = scale * 1.3;
+       } else if (themeTypeFlag === 'christmas') {
+          targetScale = scale * 1.2;
+       } else {
+          targetScale = scale * 1.2;
+       }
+    } else {
+       // 普通状态
+       if (themeTypeFlag === 'scifi') {
+          targetScale = scale * 1.2;
+       } else {
+          targetScale = scale;
+       }
+    }
+
+    node.style.transform = `${baseTransform} scale(${targetScale})`;
   }
 
   /**

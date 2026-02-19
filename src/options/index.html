@@ -295,6 +295,30 @@
       </ul>
     </div>
   </div>
+
+  <div class="option-group">
+    <h2 data-i18n="options.settings">导航设置</h2>
+    <div class="option-item">
+      <div class="option-label">
+        <span class="title" data-i18n="options.nav.minScale">最小节点缩放</span>
+        <span class="description" data-i18n="options.nav.minScale.desc">滚动模式下节点的最小尺寸</span>
+      </div>
+      <div style="display: flex; align-items: center;">
+        <input type="range" id="nav-min-scale" min="0.3" max="1.0" step="0.1" value="0.6"
+               style="width: 100px; cursor: pointer;">
+        <span id="nav-min-scale-value" style="margin-left: 10px; min-width: 40px; text-align: right;">0.6</span>
+      </div>
+    </div>
+
+    <div class="option-item">
+      <div class="option-label">
+        <span class="title" data-i18n="options.nav.scrollThreshold">滚动阈值</span>
+        <span class="description" data-i18n="options.nav.scrollThreshold.desc">多少个节点后启用滚动</span>
+      </div>
+      <input type="number" id="nav-scroll-threshold" min="10" max="50" value="18"
+             style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid #ddd;">
+    </div>
+  </div>
   
   <div class="option-group">
     <h2 data-i18n="options.shortcuts">快捷键</h2>
