@@ -247,7 +247,7 @@
     <div class="option-item">
       <div class="option-label">
         <span class="title">Qwen</span>
-        <span class="description">(qianwen.com)</span>
+        <span class="description">(qianwen.com / chat.qwen.ai)</span>
       </div>
       <label class="toggle-switch">
         <input type="checkbox" id="enable-qwen" checked>
@@ -262,6 +262,17 @@
       </div>
       <label class="toggle-switch">
         <input type="checkbox" id="enable-doubao" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+    
+    <div class="option-item">
+      <div class="option-label">
+        <span class="title">Grok</span>
+        <span class="description">(x.com/i/grok)</span>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="enable-grok" checked>
         <span class="slider"></span>
       </label>
     </div>
@@ -287,38 +298,22 @@
   
   <div class="option-group">
     <h2 data-i18n="options.shortcuts">快捷键</h2>
-    <div class="option-item">
-      <div class="option-label">
-        <span class="title" data-i18n="options.shortcuts.nav">导航快捷键</span>
-        <span class="description" data-i18n="options.shortcuts.nav.desc">
-          <strong>Mac:</strong> Option (⌥) + W/S (上/下) &nbsp;|&nbsp; 
-          <strong>Win/Linux:</strong> Alt + W/S (上/下)
-        </span>
-      </div>
+    
+    <div id="shortcuts-container">
+      <!-- Shortcuts will be dynamically rendered here -->
     </div>
-    <div class="option-item" style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 10px;">
-      <div class="option-label">
-        <span class="title" data-i18n="options.shortcuts.mark">标记当前对话</span>
-        <span class="description" data-i18n="options.shortcuts.mark.desc">
-          <strong>Mac:</strong> Option (⌥) + A &nbsp;|&nbsp; 
-          <strong>Win/Linux:</strong> Alt + A
-        </span>
+    
+    <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; font-size: 13px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 5px;">
+        <span style="font-size: 16px;">💡</span>
+        <span data-i18n="options.shortcuts.custom.hint">点击下方按钮可打开 Chrome 快捷键设置页面</span>
       </div>
-    </div>
-    <div class="option-item" style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 10px;">
-      <div class="option-label">
-        <span class="title" data-i18n="options.shortcuts.toggle">显示/隐藏面板</span>
-        <span class="description" data-i18n="options.shortcuts.toggle.desc">
-          <strong>Mac:</strong> Option (⌥) + D &nbsp;|&nbsp; 
-          <strong>Win/Linux:</strong> Alt + D
-        </span>
+      
+      <div style="display: flex; gap: 10px;">
+        <button id="edit-shortcuts-btn" style="padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;">
+          <span data-i18n="options.shortcuts.edit">打开快捷键设置</span>
+        </button>
       </div>
-    </div>
-    <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 13px;">
-      <span data-i18n="options.shortcuts.custom.hint">💡 想要自定义快捷键？访问 </span>
-      <a href="#" id="shortcuts-link" style="color: #4CAF50; text-decoration: none;">
-        chrome://extensions/shortcuts
-      </a>
     </div>
   </div>
   

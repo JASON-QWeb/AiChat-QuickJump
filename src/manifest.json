@@ -36,8 +36,11 @@
         "https://kimi.com/*",
         "https://www.qianwen.com/*",
         "https://qianwen.com/*",
+        "https://www.chat.qwen.ai/*",
+        "https://chat.qwen.ai/*",
         "https://www.doubao.com/*",
-        "https://doubao.com/*"
+        "https://doubao.com/*",
+        "https://x.com/i/grok/*"
       ],
       "js": [
         "content/index.js"

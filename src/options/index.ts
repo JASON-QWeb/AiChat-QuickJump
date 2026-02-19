@@ -40,6 +40,58 @@ function applyTranslations(lang: Language) {
   document.title = getTranslation('options.title', lang);
 }
 
+// 加载快捷键
+async function loadShortcuts() {
+  const container = document.getElementById('shortcuts-container');
+  if (!container) return;
+
+  try {
+    const commands = await chrome.commands.getAll();
+    
+    // 清空现有内容
+    container.innerHTML = '';
+    
+    const visibleCommands = commands.filter(cmd => cmd.name !== '_execute_action');
+    
+    visibleCommands.forEach((cmd, index) => {
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'option-item';
+      if (index > 0) {
+        itemDiv.style.borderTop = '1px solid #eee';
+        itemDiv.style.paddingTop = '15px';
+        itemDiv.style.marginTop = '10px';
+      }
+
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'option-label';
+      
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'title';
+      titleSpan.textContent = cmd.description || cmd.name; // 优先显示描述
+      
+      const descSpan = document.createElement('span');
+      descSpan.className = 'description';
+      
+      // 格式化快捷键显示
+      const shortcutText = cmd.shortcut || getTranslation('options.shortcuts.not_set', currentLanguage) || 'Not set';
+      
+      const displayShortcut = shortcutText
+        .replace(/\+/g, ' + ');
+
+      descSpan.innerHTML = `<strong>${displayShortcut}</strong>`;
+
+      labelDiv.appendChild(titleSpan);
+      labelDiv.appendChild(descSpan);
+      itemDiv.appendChild(labelDiv);
+      container.appendChild(itemDiv);
+    });
+    
+  } catch (error) {
+    console.error('Failed to load shortcuts:', error);
+    container.innerHTML = '<div style="padding: 10px; color: #666;">Failed to load shortcuts</div>';
+  }
+}
+
 // 加载配置
 async function loadSettings(): Promise<void> {
   try {
@@ -97,6 +149,10 @@ async function loadSettings(): Promise<void> {
     }
     
     renderCustomUrls(customUrls);
+    
+    // 加载快捷键
+    loadShortcuts();
+    
   } catch (error) {
     // console.error('加载设置失败:', error);
   }
@@ -274,6 +330,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const urls = result[CONFIG_KEYS.CUSTOM_URLS] || [];
         renderCustomUrls(urls);
       });
+      // 重新渲染快捷键（以更新"Not set"文本）
+      loadShortcuts();
     });
   }
   
@@ -290,6 +348,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.key === 'Enter') {
         addCustomUrl();
       }
+    });
+  }
+  
+  // 监听打开快捷键设置按钮
+  const editShortcutsBtn = document.getElementById('edit-shortcuts-btn');
+  if (editShortcutsBtn) {
+    editShortcutsBtn.addEventListener('click', () => {
+      chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
     });
   }
 });

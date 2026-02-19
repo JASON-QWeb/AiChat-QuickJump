@@ -55,10 +55,20 @@ if (fs.existsSync(localesSrc)) {
 }
 
 // 复制 icons
-const iconsSrc = path.join('icons');
+const iconsSrc = path.join('src', 'icons');
 if (fs.existsSync(iconsSrc)) {
   copyDir(iconsSrc, path.join('dist', 'icons'));
 }
+
+// 复制根目录下的 icon*.png
+const rootIcons = ['icon16.png', 'icon32.png', 'icon48.png', 'icon128.png'];
+rootIcons.forEach(icon => {
+  const srcPath = path.join('src', icon);
+  const distPath = path.join('dist', icon);
+  if (fs.existsSync(srcPath)) {
+    fs.copyFileSync(srcPath, distPath);
+  }
+});
 
 // 打包配置
 const buildOptions = {
