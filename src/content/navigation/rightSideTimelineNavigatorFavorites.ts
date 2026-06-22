@@ -1681,7 +1681,7 @@ export function createFavoritesModalFooter(
   });
 
   const openSourceLink = document.createElement('a');
-  openSourceLink.href = 'https://www.aichatjump.click';
+  openSourceLink.href = 'https://github.com/JASON-QWeb/AiChat-QuickJump';
   openSourceLink.textContent = ctx.t('favorites.footer.openSource');
   openSourceLink.target = '_blank';
   openSourceLink.rel = 'noopener noreferrer';
