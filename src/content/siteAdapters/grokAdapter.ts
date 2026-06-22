@@ -1,5 +1,27 @@
 import { extractPromptContent, type SiteAdapter, type PromptAnswerPair } from './index';
 
+function getTopOffset(element: HTMLElement): number {
+  const rect = element.getBoundingClientRect();
+  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  return rect.top + scrollTop;
+}
+
+function isValidPromptNode(element: HTMLElement): boolean {
+  if (element.querySelector('textarea, [contenteditable="true"], form')) {
+    return false;
+  }
+
+  const text = element.textContent?.trim() || '';
+  if (text.length > 0) return true;
+
+  return !!element.querySelector('img, svg, canvas, pre, code');
+}
+
+function getCurrentGrokMessages(root: Document | HTMLElement): HTMLElement[] {
+  return Array.from(root.querySelectorAll('[data-testid="user-message"], [data-testid="assistant-message"]'))
+    .filter((el): el is HTMLElement => el instanceof HTMLElement);
+}
+
 /**
  * Grok AI 站点适配器
  * 支持 grok.com 的对话页面
@@ -36,26 +58,50 @@ export const grokAdapter: SiteAdapter = {
    */
   getPromptAnswerPairs(root: Document | HTMLElement): PromptAnswerPair[] {
     const pairs: PromptAnswerPair[] = [];
-    
-    /**
-     * 辅助函数：计算元素相对于文档顶部的偏移量
-     */
-    const getTopOffset = (element: HTMLElement): number => {
-      const rect = element.getBoundingClientRect();
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      return rect.top + scrollTop;
-    };
+
+    const allMessages = getCurrentGrokMessages(root);
+    const currentUserMessages = allMessages.filter(message =>
+      message.getAttribute('data-testid') === 'user-message' && isValidPromptNode(message)
+    );
+
+    if (currentUserMessages.length > 0) {
+      currentUserMessages.forEach((userMsg, index) => {
+        const msgIndex = allMessages.indexOf(userMsg);
+        let answerNode = userMsg;
+
+        for (let i = msgIndex + 1; i < allMessages.length; i++) {
+          const nextMsg = allMessages[i];
+          const testId = nextMsg.getAttribute('data-testid');
+
+          if (testId === 'assistant-message') {
+            answerNode = nextMsg;
+            break;
+          }
+          if (testId === 'user-message') {
+            break;
+          }
+        }
+
+        pairs.push({
+          id: `grok-turn-${index}`,
+          promptNode: userMsg,
+          promptText: extractPromptContent(userMsg),
+          answerNode,
+          topOffset: getTopOffset(userMsg)
+        });
+      });
+
+      return pairs;
+    }
 
     // Grok 可能使用的用户消息选择器
-    // 需要根据实际 DOM 结构调整
     const userMessageSelectors = [
-      '[data-message-author-role="user"]',  // 类似 ChatGPT 的结构
-      '[data-testid="user-message"]',       // 测试 ID
-      '.user-message',                       // 通用类名
-      'div[class*="user"][class*="message"]', // 模糊匹配
-      '[role="user"]',                       // ARIA role
-      'div[data-sender="user"]',             // data 属性
-      'div[data-role="user"]'                // data 属性
+      '[data-message-author-role="user"]',
+      '.user-message',
+      'div[class*="user"][class*="message"]',
+      '[role="user"]',
+      'div[data-sender="user"]',
+      'div[data-role="user"]'
     ];
 
     let userMessages: HTMLElement[] = [];
@@ -64,8 +110,11 @@ export const grokAdapter: SiteAdapter = {
     for (const selector of userMessageSelectors) {
       const found = root.querySelectorAll(selector);
       if (found.length > 0) {
-        userMessages = Array.from(found) as HTMLElement[];
-        break;
+        userMessages = Array.from(found)
+          .filter((el): el is HTMLElement => el instanceof HTMLElement && isValidPromptNode(el));
+        if (userMessages.length > 0) {
+          break;
+        }
       }
     }
 
@@ -83,10 +132,7 @@ export const grokAdapter: SiteAdapter = {
                                  element.getAttribute('data-role') === 'user';
         
         // 确保有内容
-        const hasContent = (element.textContent?.trim().length ?? 0) > 0 ||
-                          !!element.querySelector('img, svg, canvas, pre, code');
-        
-        return hasUserIndicator && hasContent;
+        return hasUserIndicator && isValidPromptNode(element);
       }) as HTMLElement[];
     }
 
@@ -95,7 +141,7 @@ export const grokAdapter: SiteAdapter = {
       const promptText = extractPromptContent(userMsg);
       
       pairs.push({
-        id: `grok-turn-${index}-${Date.now()}`,
+        id: `grok-legacy-turn-${index}`,
         promptNode: userMsg,
         promptText: promptText,
         answerNode: userMsg, // 暂时指向自己，跳转主要依赖 promptNode
@@ -110,9 +156,15 @@ export const grokAdapter: SiteAdapter = {
    * 快速获取问题数量
    */
   getPromptCount(root: Document | HTMLElement): number {
+    const currentMessages = getCurrentGrokMessages(root).filter(message =>
+      message.getAttribute('data-testid') === 'user-message' && isValidPromptNode(message)
+    );
+    if (currentMessages.length > 0) {
+      return currentMessages.length;
+    }
+
     const selectors = [
       '[data-message-author-role="user"]',
-      '[data-testid="user-message"]',
       '.user-message',
       'div[class*="user"][class*="message"]',
       '[role="user"]',
@@ -122,7 +174,9 @@ export const grokAdapter: SiteAdapter = {
     
     const elements = root.querySelectorAll(selectors);
     if (elements.length > 0) {
-      return elements.length;
+      return Array.from(elements).filter(el =>
+        el instanceof HTMLElement && isValidPromptNode(el)
+      ).length;
     }
     
     // 回退：尝试通用选择器
@@ -132,7 +186,7 @@ export const grokAdapter: SiteAdapter = {
     for (let i = 0; i < allMessages.length; i++) {
       const el = allMessages[i] as HTMLElement;
       const classList = el.className.toLowerCase();
-      if (classList.includes('user') || classList.includes('human')) {
+      if ((classList.includes('user') || classList.includes('human')) && isValidPromptNode(el)) {
         count++;
       }
     }
@@ -140,4 +194,3 @@ export const grokAdapter: SiteAdapter = {
     return count;
   }
 };
-

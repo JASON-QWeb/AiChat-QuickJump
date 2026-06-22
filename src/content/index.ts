@@ -21,14 +21,6 @@ async function getSettings() {
   if (cachedSettings) return cachedSettings;
   cachedSettings = await chrome.storage.sync.get([
     'custom_urls', 
-    'enable_chatgpt', 
-    'enable_claude', 
-    'enable_gemini',
-    'enable_deepseek',
-    'enable_grok',
-    'enable_kimi',
-    'enable_qwen',
-    'enable_doubao',
     'ui_theme',
     'language'
   ]);
@@ -404,33 +396,6 @@ async function init() {
       return;
     }
     
-    // 检查是否在配置中启用了该站点
-    let isEnabled = true;
-    if (adapter.name === 'ChatGPT') {
-        isEnabled = settings.enable_chatgpt !== false;
-    } else if (adapter.name === 'Claude') {
-        isEnabled = settings.enable_claude !== false;
-    } else if (adapter.name === 'Gemini') {
-        isEnabled = settings.enable_gemini !== false;
-    } else if (adapter.name === 'DeepSeek') {
-        isEnabled = settings.enable_deepseek !== false;
-    } else if (adapter.name === 'Grok') {
-        isEnabled = settings.enable_grok !== false;
-    } else if (adapter.name === 'Kimi') {
-        isEnabled = settings.enable_kimi !== false;
-    } else if (adapter.name === 'Qwen') {
-        isEnabled = settings.enable_qwen !== false;
-    } else if (adapter.name === '豆包') {
-        isEnabled = settings.enable_doubao !== false;
-    }
-
-    // console.log('[LLM-Nav] Adapter enabled:', isEnabled);
-
-    if (!isEnabled) {
-      if (executionId === currentInitId) isInitializing = false;
-      return;
-    }
-  
   // 旧的悬浮按钮导航已被时间线导航替代，此处代码已移除
   
   // 尝试查找更精确的根容器（通常是 <main>）以减少不必要的扫描和监听

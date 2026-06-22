@@ -1,6 +1,8 @@
 // Background Service Worker
 
 const CUSTOM_SCRIPT_ID = 'llm-nav-custom-sites';
+const TUTORIAL_ENABLED_KEY = 'llm-nav-tutorial-enabled';
+const TUTORIAL_COMPLETED_KEY = 'llm-nav-tutorial-completed';
 
 /**
  * 更新自定义站点的 Content Scripts
@@ -58,7 +60,20 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
   // 仅首次安装时开启新手教程
   if (details.reason === 'install') {
-    chrome.storage.local.set({ 'llm-nav-tutorial-enabled': true });
+    const state = await chrome.storage.local.get([TUTORIAL_ENABLED_KEY, TUTORIAL_COMPLETED_KEY]);
+    if (state[TUTORIAL_COMPLETED_KEY] === true) return;
+
+    if (state[TUTORIAL_ENABLED_KEY] === false) {
+      chrome.storage.local.set({ [TUTORIAL_COMPLETED_KEY]: true });
+      return;
+    }
+
+    if (state[TUTORIAL_ENABLED_KEY] === undefined) {
+      chrome.storage.local.set({
+        [TUTORIAL_ENABLED_KEY]: true,
+        [TUTORIAL_COMPLETED_KEY]: false
+      });
+    }
   }
 });
 
@@ -104,6 +119,18 @@ chrome.commands.onCommand.addListener((command) => {
 
 // 打开插件选项页（供 content script 调用）
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === 'LLM_NAV_OPEN_SHORTCUTS') {
+    try {
+      chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }, () => {
+        sendResponse({ success: !chrome.runtime.lastError });
+      });
+    } catch (err) {
+      sendResponse({ success: false, error: String(err) });
+    }
+
+    return true;
+  }
+
   if (message?.type !== 'LLM_NAV_OPEN_OPTIONS') return;
 
   try {

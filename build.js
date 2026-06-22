@@ -4,10 +4,11 @@ const path = require('path');
 
 const isWatch = process.argv.includes('--watch');
 
-// 确保 dist 目录存在
-if (!fs.existsSync('dist')) {
-  fs.mkdirSync('dist');
+// 确保每次构建都从干净的 dist 开始，避免旧资源残留
+if (fs.existsSync('dist')) {
+  fs.rmSync('dist', { recursive: true, force: true });
 }
+fs.mkdirSync('dist', { recursive: true });
 
 // 复制 manifest.json
 fs.copyFileSync(
@@ -54,8 +55,17 @@ if (fs.existsSync(localesSrc)) {
   copyDir(localesSrc, path.join('dist', '_locales'));
 }
 
-// 复制 icons
-const iconsSrc = path.join('icons');
+// 复制 manifest 顶层图标
+const rootIconFiles = ['icon16.png', 'icon32.png', 'icon48.png', 'icon128.png'];
+rootIconFiles.forEach(file => {
+  const srcPath = path.join('src', file);
+  if (fs.existsSync(srcPath)) {
+    fs.copyFileSync(srcPath, path.join('dist', file));
+  }
+});
+
+// 复制 web_accessible_resources 使用的站点图标
+const iconsSrc = path.join('src', 'icons');
 if (fs.existsSync(iconsSrc)) {
   copyDir(iconsSrc, path.join('dist', 'icons'));
 }
@@ -93,4 +103,3 @@ async function build() {
 }
 
 build();
-
