@@ -3,9 +3,10 @@
   "version": "2.0.3",
   "description": "AI Chat Quick jump - Make AI Conversation Navigation Simple and Efficient",
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "build": "node build.js",
     "dev": "node build.js --watch",
-    "package": "node build.js && node package-extension.js"
+    "package": "npm run typecheck && node build.js && node package-extension.js"
   },
   "keywords": [
     "chrome-extension",

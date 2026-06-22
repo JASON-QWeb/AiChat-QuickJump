@@ -66,7 +66,7 @@
 | <img src="public/icons/grok.svg" width="18" alt="Grok"> Grok | `grok.com` |
 | <img src="public/icons/qwen.png" width="18" alt="Qwen"> Qwen | `qianwen.com` |
 | <img src="public/icons/kimi.png" width="18" alt="Kimi"> Kimi | `kimi.com` |
-| <img src="public/icons/doubao.png" width="18" alt="豆包"> 豆包 | `qdoubao.com` |
+| <img src="public/icons/doubao.png" width="18" alt="豆包"> 豆包 | `doubao.com` |
 | <img src="public/icons/chatglm.png" width="18" alt="ChatGLM"> ChatGLM | `chatglm.cn` |
 
 支持自定义 URL，可在设置中添加其他 AI 聊天网站。
