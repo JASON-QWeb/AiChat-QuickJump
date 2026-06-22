@@ -46,7 +46,8 @@ export const deepseekAdapter: SiteAdapter = {
   name: 'DeepSeek',
   
   isSupported(location: Location): boolean {
-    return location.hostname === 'chat.deepseek.com';
+    return location.hostname === 'chat.deepseek.com' ||
+           location.hostname === 'www.chat.deepseek.com';
   },
 
   getPromptAnswerPairs(root: Document | HTMLElement): PromptAnswerPair[] {

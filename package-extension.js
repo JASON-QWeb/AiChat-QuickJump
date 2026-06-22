@@ -13,8 +13,15 @@ if (!fs.existsSync('dist')) {
 // 获取版本号
 const manifestPath = path.join('dist', 'manifest.json');
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const version = manifest.version;
-const name = manifest.name.replace(/\s+/g, '-').toLowerCase();
+const rawName = manifest.name?.startsWith('__MSG_')
+  ? packageJson.name
+  : manifest.name || packageJson.name || 'ai-chat-quick-jump';
+const name = rawName
+  .replace(/[^a-zA-Z0-9._-]+/g, '-')
+  .replace(/^-+|-+$/g, '')
+  .toLowerCase();
 
 // 创建压缩包文件名
 const zipName = `${name}-v${version}.zip`;
@@ -47,4 +54,3 @@ try {
   // console.error('❌ 打包失败:', error.message);
   process.exit(1);
 }
-

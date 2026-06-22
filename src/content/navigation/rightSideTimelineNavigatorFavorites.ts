@@ -372,7 +372,7 @@ export async function refreshFavoritesModalIfOpen(ctx: FavoritesContext): Promis
  */
 export async function showFavoritesModal(
   ctx: FavoritesContext,
-  initialView: 'front' | 'back' = 'front'
+  initialView: FavoritesModalView = 'front'
 ): Promise<void> {
   // 如果弹窗已存在，先移除
   ctx.removeFavoritesModalElements();
@@ -1681,7 +1681,7 @@ export function createFavoritesModalFooter(
   });
 
   const openSourceLink = document.createElement('a');
-  openSourceLink.href = 'https://www.aichatjump.click';
+  openSourceLink.href = 'https://github.com/JASON-QWeb/AiChat-QuickJump';
   openSourceLink.textContent = ctx.t('favorites.footer.openSource');
   openSourceLink.target = '_blank';
   openSourceLink.rel = 'noopener noreferrer';
@@ -2428,7 +2428,7 @@ export function getSiteIconUrl(siteName: string): string {
     'Grok': 'icons/grok.svg',
     'Kimi': 'icons/kimi-icon.png',
     'Qwen': 'icons/qwen.png',
-    '豆包': 'icons/豆包icon.png',
+    '豆包': 'icons/doubao.png',
     'ChatGLM': 'icons/chatglm.png'
   };
 

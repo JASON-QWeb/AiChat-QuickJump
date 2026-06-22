@@ -18,7 +18,9 @@ export const chatgptAdapter: SiteAdapter = {
     const { hostname, pathname } = location;
     
     // 检测是否是 ChatGPT 域名
-    const isChatGPT = hostname === 'chatgpt.com' || hostname === 'chat.openai.com';
+    const isChatGPT = hostname === 'chatgpt.com' ||
+                      hostname === 'www.chatgpt.com' ||
+                      hostname === 'chat.openai.com';
     
     // 检测是否是对话页面
     // 1. 根路径: /
@@ -141,4 +143,3 @@ export const chatgptAdapter: SiteAdapter = {
     return count;
   }
 };
-

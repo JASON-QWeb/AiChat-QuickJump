@@ -71,7 +71,7 @@ When chat with AI:
 | <img src="public/icons/grok.svg" width="18" alt="Grok"> Grok | `grok.com` |
 | <img src="public/icons/qwen.png" width="18" alt="Qwen"> Qwen | `qianwen.com` |
 | <img src="public/icons/kimi.png" width="18" alt="Kimi"> Kimi | `kimi.com` |
-| <img src="public/icons/doubao.png" width="18" alt="Doubao"> Doubao | `qdoubao.com` |
+| <img src="public/icons/doubao.png" width="18" alt="Doubao"> Doubao | `doubao.com` |
 | <img src="public/icons/chatglm.png" width="18" alt="ChatGLM"> ChatGLM | `chatglm.cn` |
 
 Custom URLs are supported, so you can add other AI chat websites in the options page.

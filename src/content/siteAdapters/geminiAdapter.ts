@@ -4,7 +4,8 @@ export const geminiAdapter: SiteAdapter = {
   name: 'Gemini',
   
   isSupported(location: Location): boolean {
-    return location.hostname === 'gemini.google.com';
+    return location.hostname === 'gemini.google.com' ||
+           location.hostname === 'www.gemini.google.com';
   },
 
   getPromptAnswerPairs(root: Document | HTMLElement): PromptAnswerPair[] {
@@ -50,4 +51,3 @@ export const geminiAdapter: SiteAdapter = {
     return root.querySelectorAll(userSelectors.join(',')).length;
   }
 };
-
