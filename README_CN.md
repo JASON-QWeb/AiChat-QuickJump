@@ -14,6 +14,12 @@
 
 ---
 
+## 停止维护
+
+由于目前大部分 AI 对话网站已经内置了类似功能，本项目已停止维护。
+
+---
+
 ### 官方网站
 
 - [www.aichatjump.click](http://www.aichatjump.click)

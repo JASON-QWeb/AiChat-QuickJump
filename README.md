@@ -14,6 +14,12 @@
 
 ---
 
+## Maintenance Status
+
+Most AI chat websites now provide similar built-in features，this project is no longer actively maintained.
+
+---
+
 ### Official Website
 
 - [www.aichatjump.click](http://www.aichatjump.click)
