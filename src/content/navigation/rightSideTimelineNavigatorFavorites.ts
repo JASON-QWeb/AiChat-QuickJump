@@ -17,13 +17,16 @@ import {
 } from '../store/favoriteArchiveStore';
 import { ChristmasThemeEffects, SciFiThemeEffects } from './themeEffects';
 import type { TimelineTheme } from './themes';
+import type { Language } from '../../utils/i18n';
+
+type FavoritesModalView = 'front' | 'back' | 'settings';
 
 export type FavoritesContext = {
   container: HTMLElement;
   topStarButton: HTMLElement | null;
   bottomStarsButton: HTMLElement | null;
   favoritesModal: HTMLElement | null;
-  favoritesModalView: 'front' | 'back';
+  favoritesModalView: FavoritesModalView;
   isFavorited: boolean;
   siteName: string;
   currentUrl: string;
@@ -38,7 +41,7 @@ export type FavoritesContext = {
   handleFavoriteClick: () => Promise<void>;
   playStarBounceAnimation: () => void;
   syncPinnedToFavorites: () => Promise<void>;
-  showFavoritesModal: (initialView?: 'front' | 'back') => Promise<void>;
+  showFavoritesModal: (initialView?: FavoritesModalView) => Promise<void>;
   createConversationItem: (conv: FavoriteConversation) => HTMLElement;
   createFavoritesModalFooter: (side: 'front' | 'back') => HTMLElement;
   openOptionsPage: () => void;
@@ -1026,6 +1029,486 @@ export async function showFavoritesModal(
       onClick: () => ctx.closeFavoritesModal()
     });
 
+  const createSettingsView = async (): Promise<HTMLElement> => {
+    const SETTINGS_KEYS = {
+      UI_THEME: 'ui_theme',
+      CUSTOM_URLS: 'custom_urls',
+      LANGUAGE: 'language'
+    } as const;
+
+    const supportedSites = [
+      { label: 'ChatGPT', url: 'https://chatgpt.com', icon: ctx.getSiteIconUrl('ChatGPT') },
+      { label: 'Claude', url: 'https://claude.ai', icon: ctx.getSiteIconUrl('Claude') },
+      { label: 'Gemini', url: 'https://gemini.google.com', icon: ctx.getSiteIconUrl('Gemini') },
+      { label: 'DeepSeek', url: 'https://chat.deepseek.com', icon: ctx.getSiteIconUrl('DeepSeek') },
+      { label: 'Grok', url: 'https://grok.com', icon: ctx.getSiteIconUrl('Grok') },
+      { label: 'Kimi', url: 'https://kimi.com', icon: ctx.getSiteIconUrl('Kimi') },
+      { label: 'Qwen', url: 'https://www.qianwen.com', icon: ctx.getSiteIconUrl('Qwen') },
+      { label: '豆包', url: 'https://www.doubao.com', icon: ctx.getSiteIconUrl('豆包') },
+      { label: 'ChatGLM', url: 'https://chatglm.cn', icon: ctx.getSiteIconUrl('ChatGLM') }
+    ];
+
+    const storageKeys = [
+      SETTINGS_KEYS.UI_THEME,
+      SETTINGS_KEYS.CUSTOM_URLS,
+      SETTINGS_KEYS.LANGUAGE
+    ];
+    const settings = await chrome.storage.sync.get(storageKeys);
+
+    const view = document.createElement('div');
+    Object.assign(view.style, {
+      position: 'absolute',
+      inset: '0',
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: ctx.currentTheme.tooltipBackgroundColor,
+      color: ctx.currentTheme.tooltipTextColor
+    });
+
+    const header = document.createElement('div');
+    Object.assign(header.style, {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '16px 20px',
+      borderBottom: '1px solid rgba(128,128,128,0.2)'
+    });
+
+    const titleGroup = document.createElement('div');
+    Object.assign(titleGroup.style, {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      minWidth: '0'
+    });
+
+    const title = document.createElement('h3');
+    title.textContent = ctx.t('favorites.footer.settings');
+    Object.assign(title.style, { margin: '0', fontSize: '16px', fontWeight: '600' });
+
+    const backBtn = createIconButton({
+      title: ctx.t('favorites.archive.back'),
+      svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg>`,
+      onClick: () => ctx.showFavoritesModal('front')
+    });
+
+    titleGroup.appendChild(backBtn);
+    titleGroup.appendChild(title);
+
+    const right = document.createElement('div');
+    Object.assign(right.style, { display: 'flex', alignItems: 'center', gap: '6px' });
+    right.appendChild(createCloseButton());
+
+    header.appendChild(titleGroup);
+    header.appendChild(right);
+
+    const content = document.createElement('div');
+    Object.assign(content.style, {
+      flex: '1',
+      overflowY: 'auto',
+      padding: '14px 20px 18px',
+      minHeight: '0'
+    });
+
+    const status = document.createElement('div');
+    Object.assign(status.style, {
+      display: 'none',
+      padding: '8px 10px',
+      marginBottom: '10px',
+      borderRadius: '8px',
+      fontSize: '12px',
+      lineHeight: '1.4'
+    });
+
+    let statusTimer: number | null = null;
+    const showStatus = (message: string, error = false): void => {
+      if (statusTimer) window.clearTimeout(statusTimer);
+      status.textContent = message;
+      status.style.display = 'block';
+      status.style.backgroundColor = error ? 'rgba(229,57,53,0.12)' : 'rgba(76,175,80,0.14)';
+      status.style.color = error ? '#e53935' : ctx.currentTheme.tooltipTextColor;
+      statusTimer = window.setTimeout(() => {
+        status.style.display = 'none';
+      }, 1800);
+    };
+
+    const saveSetting = async (key: string, value: unknown): Promise<void> => {
+      await chrome.storage.sync.set({ [key]: value });
+      showStatus(ctx.t('options.save.success'));
+    };
+
+    const section = (heading?: string): HTMLElement => {
+      const wrapper = document.createElement('section');
+      Object.assign(wrapper.style, {
+        marginBottom: '16px',
+        border: '1px solid rgba(128,128,128,0.18)',
+        borderRadius: '10px',
+        overflow: 'hidden'
+      });
+      if (heading) {
+        const h = document.createElement('div');
+        h.textContent = heading;
+        Object.assign(h.style, {
+          padding: '10px 12px',
+          fontSize: '13px',
+          fontWeight: '700',
+          borderBottom: '1px solid rgba(128,128,128,0.14)'
+        });
+        wrapper.appendChild(h);
+      }
+      return wrapper;
+    };
+
+    const row = (label: string, control: HTMLElement, detail?: string): HTMLElement => {
+      const item = document.createElement('div');
+      Object.assign(item.style, {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '14px',
+        padding: '10px 12px',
+        borderBottom: '1px solid rgba(128,128,128,0.1)'
+      });
+
+      const text = document.createElement('div');
+      Object.assign(text.style, { minWidth: '0', flex: '1' });
+      const main = document.createElement('div');
+      main.textContent = label;
+      Object.assign(main.style, {
+        fontSize: '13px',
+        fontWeight: '600',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap'
+      });
+      text.appendChild(main);
+      if (detail) {
+        const sub = document.createElement('div');
+        sub.textContent = detail;
+        Object.assign(sub.style, {
+          marginTop: '2px',
+          fontSize: '11px',
+          opacity: '0.6',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        });
+        text.appendChild(sub);
+      }
+      item.appendChild(text);
+      item.appendChild(control);
+      return item;
+    };
+
+    const createSelect = (value: string, options: Array<{ value: string; label: string }>, onChange: (value: string) => void): HTMLSelectElement => {
+      const select = document.createElement('select');
+      options.forEach((option) => {
+        const el = document.createElement('option');
+        el.value = option.value;
+        el.textContent = option.label;
+        select.appendChild(el);
+      });
+      select.value = value;
+      Object.assign(select.style, {
+        padding: '7px 10px',
+        borderRadius: '8px',
+        border: '1px solid rgba(128,128,128,0.35)',
+        backgroundColor: ctx.currentTheme.tooltipBackgroundColor,
+        color: ctx.currentTheme.tooltipTextColor,
+        fontSize: '12px',
+        minWidth: '138px',
+        cursor: 'pointer'
+      });
+      select.addEventListener('change', () => onChange(select.value));
+      return select;
+    };
+
+    content.appendChild(status);
+
+    const basicSection = section();
+    basicSection.appendChild(row(
+      ctx.t('options.language'),
+      createSelect((settings[SETTINGS_KEYS.LANGUAGE] || 'auto') as string, [
+        { value: 'auto', label: 'Auto' },
+        { value: 'zh-CN', label: '简体中文' },
+        { value: 'en', label: 'English' }
+      ], (value) => {
+        saveSetting(SETTINGS_KEYS.LANGUAGE, value as Language);
+      })
+    ));
+    basicSection.appendChild(row(
+      ctx.t('options.theme.ui'),
+      createSelect((settings[SETTINGS_KEYS.UI_THEME] || 'auto') as string, [
+        { value: 'auto', label: ctx.t('options.theme.auto') },
+        { value: 'light', label: ctx.t('options.theme.light') },
+        { value: 'dark', label: ctx.t('options.theme.dark') },
+        { value: 'blue', label: ctx.t('options.theme.blue') },
+        { value: 'lavender', label: ctx.t('options.theme.lavender') },
+        { value: 'pink', label: ctx.t('options.theme.pink') },
+        { value: 'orange', label: ctx.t('options.theme.orange') },
+        { value: 'christmas', label: ctx.t('options.theme.christmas') },
+        { value: 'scifi', label: ctx.t('options.theme.scifi') }
+      ], (value) => {
+        saveSetting(SETTINGS_KEYS.UI_THEME, value);
+      })
+    ));
+    content.appendChild(basicSection);
+
+    const siteSection = section(ctx.t('options.sites'));
+    const logoGrid = document.createElement('div');
+    Object.assign(logoGrid.style, {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(52px, 1fr))',
+      gap: '10px',
+      padding: '12px'
+    });
+
+    supportedSites.forEach((site) => {
+      const link = document.createElement('a');
+      link.href = site.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.title = site.label;
+      link.setAttribute('aria-label', site.label);
+      Object.assign(link.style, {
+        height: '52px',
+        borderRadius: '10px',
+        border: '1px solid rgba(128,128,128,0.16)',
+        backgroundColor: ctx.currentTheme.name === '暗色' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        transition: 'transform 0.16s ease, background-color 0.16s ease, border-color 0.16s ease'
+      });
+      link.addEventListener('mouseenter', () => {
+        link.style.transform = 'translateY(-1px)';
+        link.style.backgroundColor = hoverBg;
+        link.style.borderColor = ctx.currentTheme.activeColor;
+      });
+      link.addEventListener('mouseleave', () => {
+        link.style.transform = 'translateY(0)';
+        link.style.backgroundColor = ctx.currentTheme.name === '暗色' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)';
+        link.style.borderColor = 'rgba(128,128,128,0.16)';
+      });
+
+      const img = document.createElement('img');
+      img.src = site.icon;
+      img.alt = site.label;
+      Object.assign(img.style, {
+        width: '28px',
+        height: '28px',
+        objectFit: 'contain',
+        display: 'block'
+      });
+      link.appendChild(img);
+      logoGrid.appendChild(link);
+    });
+    siteSection.appendChild(logoGrid);
+    content.appendChild(siteSection);
+
+    const customSection = section();
+    const inputWrap = document.createElement('div');
+    Object.assign(inputWrap.style, {
+      display: 'flex',
+      gap: '8px',
+      padding: '12px',
+      borderBottom: '1px solid rgba(128,128,128,0.1)'
+    });
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = ctx.t('options.sites.custom.placeholder');
+    Object.assign(input.style, {
+      flex: '1',
+      minWidth: '0',
+      padding: '8px 10px',
+      border: '1px solid rgba(128,128,128,0.35)',
+      borderRadius: '8px',
+      backgroundColor: ctx.currentTheme.name === '暗色' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)',
+      color: ctx.currentTheme.tooltipTextColor,
+      fontSize: '12px',
+      outline: 'none'
+    });
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.textContent = ctx.t('options.sites.custom.add');
+    Object.assign(addBtn.style, {
+      padding: '8px 12px',
+      border: 'none',
+      borderRadius: '8px',
+      backgroundColor: ctx.currentTheme.activeColor,
+      color: '#fff',
+      cursor: 'pointer',
+      fontSize: '12px',
+      fontWeight: '600',
+      flexShrink: '0'
+    });
+    inputWrap.appendChild(input);
+    inputWrap.appendChild(addBtn);
+    customSection.appendChild(inputWrap);
+
+    const customList = document.createElement('div');
+    customSection.appendChild(customList);
+
+    let customUrls = Array.isArray(settings[SETTINGS_KEYS.CUSTOM_URLS])
+      ? [...settings[SETTINGS_KEYS.CUSTOM_URLS]]
+      : [];
+
+    const normalizeDomain = (raw: string): string | null => {
+      const value = raw.trim();
+      if (!value) return null;
+      try {
+        if (value.startsWith('http://') || value.startsWith('https://')) {
+          return new URL(value).hostname;
+        }
+        if (value.includes('/')) {
+          return new URL(`https://${value}`).hostname;
+        }
+        return value;
+      } catch {
+        return null;
+      }
+    };
+
+    const saveCustomUrls = async (urls: string[]): Promise<void> => {
+      customUrls = urls;
+      await chrome.storage.sync.set({ [SETTINGS_KEYS.CUSTOM_URLS]: urls });
+      showStatus(ctx.t('options.save.success'));
+    };
+
+    const renderCustomUrls = (): void => {
+      customList.innerHTML = '';
+      if (customUrls.length === 0) {
+        const empty = document.createElement('div');
+        empty.textContent = ctx.t('options.sites.custom.desc');
+        Object.assign(empty.style, {
+          padding: '14px 12px',
+          fontSize: '12px',
+          opacity: '0.65'
+        });
+        customList.appendChild(empty);
+        return;
+      }
+
+      customUrls.forEach((url, index) => {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.textContent = ctx.t('options.sites.custom.delete');
+        Object.assign(deleteBtn.style, {
+          border: 'none',
+          borderRadius: '8px',
+          padding: '6px 9px',
+          backgroundColor: 'rgba(229,57,53,0.12)',
+          color: '#e53935',
+          cursor: 'pointer',
+          fontSize: '12px',
+          flexShrink: '0'
+        });
+        deleteBtn.addEventListener('click', async () => {
+          await saveCustomUrls(customUrls.filter((_, i) => i !== index));
+          renderCustomUrls();
+        });
+        customList.appendChild(row(url, deleteBtn));
+      });
+    };
+
+    const addCustomUrl = async (): Promise<void> => {
+      const domain = normalizeDomain(input.value);
+      if (!domain) {
+        showStatus(ctx.t('options.domain.invalid'), true);
+        return;
+      }
+      if (customUrls.includes(domain)) {
+        showStatus(ctx.t('options.domain.exists'), true);
+        return;
+      }
+      await saveCustomUrls([...customUrls, domain]);
+      input.value = '';
+      renderCustomUrls();
+    };
+
+    addBtn.addEventListener('click', () => addCustomUrl());
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        addCustomUrl();
+      }
+    });
+    renderCustomUrls();
+    content.appendChild(customSection);
+
+    const shortcutsSection = section(ctx.t('options.shortcuts'));
+    const shortcutList = document.createElement('div');
+    Object.assign(shortcutList.style, {
+      padding: '10px 12px',
+      display: 'grid',
+      gap: '8px'
+    });
+
+    const shortcutLine = (label: string, value: string): HTMLElement => {
+      const line = document.createElement('div');
+      Object.assign(line.style, {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: '12px',
+        fontSize: '12px'
+      });
+      const name = document.createElement('span');
+      name.textContent = label;
+      Object.assign(name.style, { opacity: '0.75', flexShrink: '0' });
+      const keys = document.createElement('span');
+      keys.textContent = value;
+      Object.assign(keys.style, {
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+        textAlign: 'right',
+        wordBreak: 'break-word'
+      });
+      line.appendChild(name);
+      line.appendChild(keys);
+      return line;
+    };
+
+    shortcutList.appendChild(shortcutLine(ctx.t('options.shortcuts.nav'), 'Mac: Option + W/S | Win/Linux: Alt + W/S'));
+    shortcutList.appendChild(shortcutLine(ctx.t('options.shortcuts.mark'), 'Mac: Option + A | Win/Linux: Alt + A'));
+    shortcutList.appendChild(shortcutLine(ctx.t('options.shortcuts.toggle'), 'Mac: Option + D | Win/Linux: Alt + D'));
+
+    const shortcutsLink = document.createElement('a');
+    shortcutsLink.href = 'chrome://extensions/shortcuts';
+    shortcutsLink.target = '_blank';
+    shortcutsLink.rel = 'noopener noreferrer';
+    shortcutsLink.textContent = 'chrome://extensions/shortcuts';
+    Object.assign(shortcutsLink.style, {
+      display: 'inline-flex',
+      marginTop: '4px',
+      color: ctx.currentTheme.pinnedColor,
+      fontSize: '12px',
+      textDecoration: 'underline',
+      textUnderlineOffset: '2px',
+      wordBreak: 'break-all'
+    });
+    shortcutsLink.addEventListener('click', (event) => {
+      event.preventDefault();
+      chrome.runtime
+        .sendMessage({ type: 'LLM_NAV_OPEN_SHORTCUTS' })
+        .then((response) => {
+          if (!response?.success) {
+            window.open('chrome://extensions/shortcuts', '_blank', 'noopener,noreferrer');
+          }
+        })
+        .catch(() => {
+          window.open('chrome://extensions/shortcuts', '_blank', 'noopener,noreferrer');
+        });
+    });
+    shortcutList.appendChild(shortcutsLink);
+    shortcutsSection.appendChild(shortcutList);
+    content.appendChild(shortcutsSection);
+
+    view.appendChild(header);
+    view.appendChild(content);
+    return view;
+  };
+
   const frontHeader = document.createElement('div');
   frontHeader.classList.add('llm-tutorial-favorites-header');
   Object.assign(frontHeader.style, {
@@ -1146,9 +1629,18 @@ export async function showFavoritesModal(
   back.appendChild(backContent);
   back.appendChild(ctx.createFavoritesModalFooter('back'));
 
+  const settingsView = await createSettingsView();
+  if (initialView === 'settings') {
+    card.style.display = 'none';
+    settingsView.style.display = 'flex';
+  } else {
+    settingsView.style.display = 'none';
+  }
+
   card.appendChild(front);
   card.appendChild(back);
   modal.appendChild(card);
+  modal.appendChild(settingsView);
 
   // 添加遮罩层
   const overlay = document.createElement('div');
@@ -1239,7 +1731,7 @@ export function createFavoritesModalFooter(
   });
   settingsBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    ctx.openOptionsPage();
+    ctx.showFavoritesModal('settings');
   });
 
   footer.appendChild(openSourceLink);
@@ -1936,7 +2428,8 @@ export function getSiteIconUrl(siteName: string): string {
     'Grok': 'icons/grok.svg',
     'Kimi': 'icons/kimi-icon.png',
     'Qwen': 'icons/qwen.png',
-    '豆包': 'icons/豆包icon.png'
+    '豆包': 'icons/豆包icon.png',
+    'ChatGLM': 'icons/chatglm.png'
   };
 
   const iconPath = iconMap[siteName] || 'icons/icon48.svg';

@@ -69,6 +69,7 @@ import { grokAdapter } from './grokAdapter';
 import { kimiAdapter } from './kimiAdapter';
 import { qwenAdapter } from './qwenAdapter';
 import { doubaoAdapter } from './doubaoAdapter';
+import { chatglmAdapter } from './chatglmAdapter';
 import { customSiteAdapter } from './customSiteAdapter';
 
 /**
@@ -83,7 +84,8 @@ const adapters: SiteAdapter[] = [
   grokAdapter,
   kimiAdapter,
   qwenAdapter,
-  doubaoAdapter
+  doubaoAdapter,
+  chatglmAdapter
 ];
 
 /**
@@ -166,4 +168,3 @@ export function extractPromptContent(element: HTMLElement): string {
 
   return '[对话] Conversation';
 }
-

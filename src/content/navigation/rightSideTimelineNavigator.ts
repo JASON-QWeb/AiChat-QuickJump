@@ -43,6 +43,7 @@ import type { TutorialContext } from './rightSideTimelineNavigatorTutorial';
  */
 export class RightSideTimelinejump {
   private static readonly TUTORIAL_ENABLED_KEY = 'llm-nav-tutorial-enabled';
+  private static readonly TUTORIAL_COMPLETED_KEY = 'llm-nav-tutorial-completed';
 
   private container: HTMLElement;
   private timelineBar: HTMLElement;
@@ -62,7 +63,7 @@ export class RightSideTimelinejump {
   private topStarButton: HTMLElement | null = null;
   private bottomStarsButton: HTMLElement | null = null;
   private favoritesModal: HTMLElement | null = null;
-  private favoritesModalView: 'front' | 'back' = 'front';
+  private favoritesModalView: 'front' | 'back' | 'settings' = 'front';
   private isFavorited: boolean = false;
   private siteName: string = '';
   private currentLanguage: Language = 'auto';
@@ -436,7 +437,7 @@ export class RightSideTimelinejump {
   /**
    * 显示收藏列表弹窗
    */
-  private async showFavoritesModal(initialView: 'front' | 'back' = 'front'): Promise<void> {
+  private async showFavoritesModal(initialView: 'front' | 'back' | 'settings' = 'front'): Promise<void> {
     return showFavoritesModal(this.getFavoritesContext(), initialView);
   }
 
@@ -503,7 +504,11 @@ export class RightSideTimelinejump {
   }
 
   private maybeStartTutorial(): void {
-    maybeStartTutorial(this.getTutorialContext(), RightSideTimelinejump.TUTORIAL_ENABLED_KEY);
+    maybeStartTutorial(
+      this.getTutorialContext(),
+      RightSideTimelinejump.TUTORIAL_ENABLED_KEY,
+      RightSideTimelinejump.TUTORIAL_COMPLETED_KEY
+    );
   }
 
   private maybeContinueTutorialAfterFavoritesModalOpened(): void {

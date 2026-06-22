@@ -28,17 +28,31 @@ export type TutorialContext = {
   t: (key: string) => string;
 };
 
-async function isTutorialEnabled(storageKey: string): Promise<boolean> {
+async function isTutorialEnabled(enabledKey: string, completedKey: string): Promise<boolean> {
   return new Promise((resolve) => {
     try {
-      chrome.storage.local.get(storageKey, (result) => {
+      chrome.storage.local.get([enabledKey, completedKey], (result) => {
         if (chrome.runtime.lastError) {
           resolve(true);
           return;
         }
 
-        const value = result[storageKey];
-        resolve(value !== false);
+        if (result[completedKey] === true) {
+          if (result[enabledKey] !== false) {
+            chrome.storage.local.set({ [enabledKey]: false }, () => resolve(false));
+            return;
+          }
+
+          resolve(false);
+          return;
+        }
+
+        if (result[enabledKey] === false) {
+          chrome.storage.local.set({ [completedKey]: true }, () => resolve(false));
+          return;
+        }
+
+        resolve(result[enabledKey] === true);
       });
     } catch {
       resolve(true);
@@ -46,27 +60,30 @@ async function isTutorialEnabled(storageKey: string): Promise<boolean> {
   });
 }
 
-async function setTutorialEnabled(storageKey: string, enabled: boolean): Promise<void> {
+async function markTutorialCompleted(enabledKey: string, completedKey: string): Promise<void> {
   return new Promise((resolve) => {
     try {
-      chrome.storage.local.set({ [storageKey]: enabled }, () => resolve());
+      chrome.storage.local.set({
+        [enabledKey]: false,
+        [completedKey]: true
+      }, () => resolve());
     } catch {
       resolve();
     }
   });
 }
 
-export function maybeStartTutorial(ctx: TutorialContext, storageKey: string): void {
+export function maybeStartTutorial(ctx: TutorialContext, enabledKey: string, completedKey: string): void {
   if (ctx.tutorialStartRequested) return;
   if (ctx.nodes.length === 0) return;
 
   ctx.tutorialStartRequested = true;
   void (async () => {
-    const enabled = await isTutorialEnabled(storageKey);
+    const enabled = await isTutorialEnabled(enabledKey, completedKey);
     if (!enabled) return;
 
-    // 触发后即标记为 false，确保仅出现一次
-    await setTutorialEnabled(storageKey, false);
+    // 触发后立即标记已完成，确保刷新、跳转或中途关闭页面后都不会重复出现
+    await markTutorialCompleted(enabledKey, completedKey);
 
     window.setTimeout(() => {
       if (!ctx.nodes[0] || !ctx.nodes[0].isConnected) return;
